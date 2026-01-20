@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from google import genai 
+from google import genai
 from openai import OpenAI
 from pathlib import Path
 
@@ -30,54 +30,45 @@ async def serve_index():
 
 @app.post("/ask")
 async def ask_llm(req: QueryRequest):
-    # JSON-specific instructions
+    # The strictly defined prompt for diverse questions
     prompt = (
-        f"Generate an academic question for {req.topic} ({req.theme}) at {req.depth} level.\n"
-        "Include any necessary scenario or context within the question field.\n"
-        "Return the result EXCLUSIVELY as a JSON object with these exact keys: "
-        "'question' and 'reference_answer'. Do not include any other text or markdown headers."
+        f"Generate a variety of academic questions (such as MCQs, Fill-in-the-blanks, and True/False) "
+        f"for {req.topic} themed as '{req.theme}' at {req.depth} level.\n\n"
+        "You are to strictly follow this output format -\n"
+        "<Question> The generated question. <Question>\n"
+        "<Answer> The reference answer <Answer>"
     )
     
     try:
+        raw_output = ""
+        
         if req.model_id == "gemini":
             response = gemini_client.models.generate_content(
                 model="gemini-3-flash-preview", 
-                contents=prompt,
-                config={
-                    # This tells Gemini to ONLY output valid JSON
-                    'response_mime_type': 'application/json' 
-                }
+                contents=prompt
             )
-            # response.text is a JSON string, e.g., '{"question": "...", "reference_answer": "..."}'
-            data = json.loads(response.text)
-            return {
-                "question": data.get("question"),
-                "answer": data.get("reference_answer")
-            }
+            raw_output = response.text
         
         elif req.model_id == "chatgpt":
             response = openai_client.chat.completions.create(
                 model="gpt-4o",
-                # OpenAI also supports JSON mode
-                response_format={"type": "json_object"}, 
                 messages=[{"role": "user", "content": prompt}]
             )
-            data = json.loads(response.choices[0].message.content)
-            return {
-                "question": data.get("question"),
-                "answer": data.get("reference_answer")
-            }
+            raw_output = response.choices[0].message.content
         
         else:
-            return {"question": "Local Mode", "answer": "Local Response"}
+            raw_output = "<Question> Local Mode Question <Question> <Answer> Local Answer <Answer>"
+
+        # Return the raw text directly in the 'question' key
+        return {"question": raw_output}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     try:
-        uvicorn.run(app, host="localhost", port=8000)
+        uvicorn.run(app, host="localhost", port=8080)
     except KeyboardInterrupt:
         print("Stopping server...")
     finally:
-        print("Port 8000 has been released.")
+        print("Port 8080 has been released.")

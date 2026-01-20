@@ -11,8 +11,6 @@
         .custom-glow { box-shadow: 0 0 25px rgba(59, 130, 246, 0.15); }
         .loading-dots:after { content: '.'; animation: dots 1.5s steps(5, end) infinite; }
         @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } 80%, 100% { content: ''; } }
-        
-        /* Smooth scroll for the response area */
         .output-container { scroll-behavior: smooth; }
     </style>
 </head>
@@ -25,28 +23,24 @@
                 <h1 class="text-xl font-bold text-white tracking-tighter">LLM_ARENA_INTERFACE</h1>
                 <p class="text-[10px] text-blue-500 font-bold uppercase tracking-[0.2em]">DOK Question Generator</p>
             </div>
-            <div class="flex gap-2 text-xs text-slate-500 font-bold">STABLE_V2.0</div>
+            <div class="flex gap-2 text-xs text-slate-500 font-bold">STABLE_V2.2</div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">1. Depth of Knowledge (DOK)</label>
                 <select id="depth" class="w-full bg-[#0b0f1a] border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 text-sm text-white">
-                    <option value="DOK 1: Recall">DOK 1: Recall</option>
-                    <option value="DOK 2: Skill/Concept">DOK 2: Skill/Concept</option>
-                    <option value="DOK 3: Strategic Thinking">DOK 3: Strategic Thinking</option>
-                    <option value="DOK 4: Extended Thinking">DOK 4: Extended Thinking</option>
+                    <option value="DOK level 1: Recall and Reproduction">DOK level 1: Recall and Reproduction</option>
+                    <option value="DOK level 2: Basic skills and concepts">DOK level 2: Basic skills and concepts</option>
+                    <option value="DOK level 3: Strategic thinking and reasoning">DOK level 3: Strategic thinking and reasoning</option>
+                    <option value="DOK level 4: Extended Thinking">DOK level 4: Extended Thinking</option>
                 </select>
             </div>
             
             <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">2. Theme</label>
-                <select id="theme" class="w-full bg-[#0b0f1a] border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 text-sm text-white">
-                    <option value="Math">Math</option>
-                    <option value="Physics">Physics</option>
-                    <option value="Chemistry">Chemistry</option>
-                    <option value="Biology">Biology</option>
-                </select>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">2. Theme / Context</label>
+                <input id="theme" type="text" placeholder="e.g. Cyberpunk, Medieval" 
+                    class="w-full bg-[#0b0f1a] border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 text-sm text-white">
             </div>
         </div>
 
@@ -70,53 +64,41 @@
         </button>
 
         <div id="responseArea" class="mt-8 hidden space-y-6 output-container">
-            
             <div class="animate-in fade-in duration-500">
                 <div class="flex items-center justify-between mb-2 px-1">
                     <div class="flex items-center gap-2">
                         <span id="activeModelTag" class="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-widest">GEMINI</span>
-                        <span class="text-[9px] text-slate-600 uppercase">● Question Block</span>
+                        <span class="text-[9px] text-slate-600 uppercase">● Raw Output Block</span>
                     </div>
-                    <button onclick="copyText('questionText')" class="text-[9px] text-slate-500 hover:text-white transition-colors uppercase font-bold">Copy Question</button>
+                    <button onclick="copyText('questionText')" class="text-[9px] text-slate-500 hover:text-white transition-colors uppercase font-bold">Copy Output</button>
                 </div>
                 <div id="questionText" class="w-full bg-black/40 border border-slate-800 rounded-2xl p-6 text-sm leading-relaxed whitespace-pre-wrap text-slate-200 min-h-[60px]">
                     ...
                 </div>
             </div>
-
-            <div class="animate-in fade-in slide-in-from-bottom-2 duration-700">
-                <div class="flex items-center gap-2 mb-2 px-1">
-                    <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest">REFERENCE</span>
-                    <span class="text-[9px] text-slate-600 uppercase">● Expected Answer</span>
-                </div>
-                <div id="answerText" class="w-full bg-emerald-500/5 border border-emerald-900/30 rounded-2xl p-6 text-sm leading-relaxed whitespace-pre-wrap text-emerald-100/80 min-h-[60px]">
-                    ...
-                </div>
-            </div>
-
         </div>
     </div>
 
     <script>
         async function fetchAnswer() {
             const topic = document.getElementById('topic').value;
+            const theme = document.getElementById('theme').value || "Standard";
+            
             if (!topic.trim()) return alert("Please enter a topic.");
 
             const btn = document.getElementById('runBtn');
             const outputArea = document.getElementById('responseArea');
             const qText = document.getElementById('questionText');
-            const aText = document.getElementById('answerText');
             const tag = document.getElementById('activeModelTag');
 
-            // Reset and Loading State
+            // Set UI to loading state
             btn.innerHTML = 'PROCESSING <span class="loading-dots"></span>';
             btn.disabled = true;
             btn.classList.add('opacity-50', 'cursor-not-allowed');
             
             outputArea.classList.remove('hidden');
-            qText.innerText = "Processing prompt...";
-            aText.innerText = "Calculating solution...";
-            tag.innerText = document.getElementById('modelSelect').value;
+            qText.innerText = "Requesting content from LLM...";
+            tag.innerText = document.getElementById('modelSelect').value.toUpperCase();
 
             try {
                 const response = await fetch('/ask', {
@@ -125,23 +107,24 @@
                     body: JSON.stringify({
                         model_id: document.getElementById('modelSelect').value,
                         depth: document.getElementById('depth').value,
-                        theme: document.getElementById('theme').value,
+                        theme: theme,
                         topic: topic
                     })
                 });
 
                 const data = await response.json();
+                
                 if (response.ok) {
+                    // Inject raw response into the single output box
                     qText.innerText = data.question;
-                    aText.innerText = data.answer;
                 } else {
                     throw new Error(data.detail || "Server Error");
                 }
 
             } catch (error) {
                 qText.innerHTML = `<span class="text-red-400 font-bold underline">ERROR:</span> ${error.message}`;
-                aText.innerText = "The generation failed. Please check your API Quota or network connection.";
             } finally {
+                // Reset UI state
                 btn.innerHTML = 'EXECUTE EVALUATION';
                 btn.disabled = false;
                 btn.classList.remove('opacity-50', 'cursor-not-allowed');
