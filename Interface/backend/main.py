@@ -146,6 +146,12 @@ async def ask_llm(req: QueryRequest):
                 },
             ])
             raw_output = response['message']['content']
+
+        elif req.model_id == "granite3.3:8b":
+            response = ollama.chat(model='granite3.3:8b', messages=[
+                {'role': 'user', 'content': prompt}
+            ])
+            raw_output = response['message']['content']
         
         else:
             raw_output = "<Question> Local Mode Question <Question> <Answer> Local Answer <Answer>"
