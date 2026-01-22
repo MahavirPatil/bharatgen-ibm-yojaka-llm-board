@@ -6,15 +6,15 @@ from langchain_community.vectorstores import FAISS
 # 1. Load Model with Security and Memory Fixes
 MODEL_ID = "bharatgenai/Param-1-2.9B-Instruct"
 
-# Added trust_remote_code=True to resolve the ValueError
-tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_ID, 
-    torch_dtype=torch.bfloat16, 
-    device_map="auto",
-    trust_remote_code=True,      # Required for Param architecture
-    low_cpu_mem_usage=True       # Helps with large model loading
-)
+# # Added trust_remote_code=True to resolve the ValueError
+# tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
+# model = AutoModelForCausalLM.from_pretrained(
+#     MODEL_ID, 
+#     torch_dtype=torch.bfloat16, 
+#     device_map="auto",
+#     trust_remote_code=True,      # Required for Param architecture
+#     low_cpu_mem_usage=True       # Helps with large model loading
+# )
 
 # 2. Load Vector DB
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -46,6 +46,7 @@ def generate_rag_question(theme, topic):
 
     # Combine retrieved text
     context = "\n\n".join([doc.page_content for doc in results])
+    return context
     
     # --- CHAT PROMPT TEMPLATE ---
     # Param-1 uses an Instruct format. We use markers to guide it.
