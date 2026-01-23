@@ -206,6 +206,10 @@ def parse_ai_output(raw_text):
         "answer": answer_match.group(1).strip() if answer_match else "Logic embedded in text."
     }
 
+@app.get("/")
+async def serve_index():
+    return FileResponse(BASE_DIR / "../frontend/index.html")
+
 @app.post("/ask")
 async def ask_llm(req: QueryRequest):
     # RAG Context Retrieval
