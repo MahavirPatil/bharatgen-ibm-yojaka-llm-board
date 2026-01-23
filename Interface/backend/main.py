@@ -185,8 +185,70 @@ app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 
 # Clients
-gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY_1"))
+gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY_21"))
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# class QueryRequest(BaseModel):
+#     model_id: str
+#     depth: str
+#     subject: str
+#     chapter: str
+#     topic: str
+#     qType: str
+
+# def parse_ai_output(raw_text):
+#     if not raw_text:
+#         return {"question": "Error: No data.", "answer": "N/A"}
+#     question_match = re.search(r'<Question>(.*?)</Question>', raw_text, re.DOTALL)
+#     answer_match = re.search(r'<Answer>(.*?)</Answer>', raw_text, re.DOTALL)
+#     return {
+#         "question": question_match.group(1).strip() if question_match else raw_text.strip(),
+#         "answer": answer_match.group(1).strip() if answer_match else "Logic embedded in text."
+#     }
+
+# @app.get("/")
+# async def serve_index():
+#     return FileResponse(BASE_DIR / "../frontend/index.html")
+
+# @app.post("/ask")
+# async def ask_llm(req: QueryRequest):
+#     # RAG Context Retrieval
+    
+    
+#     # Standard Prompt
+#     prompt = f"### ROLE: NCERT {req.subject} Expert. TASK: Generate a {req.qType} for {req.topic} (Chapter: {req.chapter}). DOK: {req.depth}. OUTPUT: <Question>...</Question><Answer>...</Answer>"
+    
+#     try:
+#         raw_output = ""
+#         if req.model_id == "gemini":
+#             response = gemini_client.models.generate_content(model="gemini-3-flash-preview", contents=prompt)
+#             raw_output = response.text
+#         elif req.model_id == "chatgpt":
+#             response = openai_client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}])
+#             raw_output = response.choices[0].message.content
+#         elif req.model_id == "local-llama":
+#             response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': prompt}])
+#             raw_output = response['message']['content']
+#         elif req.model_id == "qwen":
+#             response = ollama.chat(model='qwen3:8b', messages=[{'role': 'user', 'content': prompt}])
+#             raw_output = response['message']['content']
+#         elif req.model_id == "granite3.3:8b":
+#             response = ollama.chat(model='granite3.3:8b', messages=[{'role': 'user', 'content': prompt}])
+#             raw_output = response['message']['content']
+#         elif req.model_id == "rag-piped-llama":
+#             topic_chunk, theme_chunk = ncert_rag.main(req.chapter, req.topic)
+#             # RAG-Specific Prompt (for rag-piped-llama)
+#             prompt_rag = f"### RAG CONTEXT:\n{topic_chunk}\n\n### TASK: Generate {req.qType} for {req.topic} using context. DOK: {req.depth}. OUTPUT: <Question>...</Question><Answer>...</Answer>"
+#             response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': prompt_rag}])
+#             raw_output = response['message']['content']
+#         else:
+#             raw_output = "<Question>Model not found.</Question><Answer>N/A</Answer>"
+
+#         return parse_ai_output(raw_output)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+    
+#     # ... (existing imports)
 
 class QueryRequest(BaseModel):
     model_id: str
@@ -195,16 +257,30 @@ class QueryRequest(BaseModel):
     chapter: str
     topic: str
     qType: str
+    num_questions: int # Added this field
 
 def parse_ai_output(raw_text):
     if not raw_text:
-        return {"question": "Error: No data.", "answer": "N/A"}
-    question_match = re.search(r'<Question>(.*?)</Question>', raw_text, re.DOTALL)
-    answer_match = re.search(r'<Answer>(.*?)</Answer>', raw_text, re.DOTALL)
-    return {
-        "question": question_match.group(1).strip() if question_match else raw_text.strip(),
-        "answer": answer_match.group(1).strip() if answer_match else "Logic embedded in text."
-    }
+        return []
+    
+    # Use findall to capture multiple questions and answers
+    questions = re.findall(r'<Question>(.*?)</Question>', raw_text, re.DOTALL)
+    answers = re.findall(r'<Answer>(.*?)</Answer>', raw_text, re.DOTALL)
+    
+    # Map them into a list of objects
+    results = []
+    for i in range(len(questions)):
+        results.append({
+            "question": questions[i].strip(),
+            "answer": answers[i].strip() if i < len(answers) else "No answer provided."
+        })
+    
+    # Fallback if no tags were found
+    if not results:
+        return [{"question": raw_text.strip(), "answer": "Logic embedded in text."}]
+        
+    return results
+
 
 @app.get("/")
 async def serve_index():
@@ -212,14 +288,26 @@ async def serve_index():
 
 @app.post("/ask")
 async def ask_llm(req: QueryRequest):
-    # RAG Context Retrieval
-    topic_chunk, theme_chunk = ncert_rag.main(req.chapter, req.topic)
-    
-    # Standard Prompt
-    prompt = f"### ROLE: NCERT {req.subject} Expert. TASK: Generate a {req.qType} for {req.topic} (Chapter: {req.chapter}). DOK: {req.depth}. OUTPUT: <Question>...</Question><Answer>...</Answer>"
-    
-    # RAG-Specific Prompt (for rag-piped-llama)
-    prompt_rag = f"### RAG CONTEXT:\n{topic_chunk}\n\n### TASK: Generate {req.qType} for {req.topic} using context. DOK: {req.depth}. OUTPUT: <Question>...</Question><Answer>...</Answer>"
+    # Your requested prompt structure
+    prompt = (
+        "### ROLE\n"
+        "Act as an expert Academic Assessment Designer specializing in curriculum development.\n\n"
+        "### TASK\n"
+        f"Generate {req.num_questions} high-quality questions based on:\n"
+        f"- QUESTION TYPE: {req.qType}\n"
+        f"- SUBJECT: {req.subject}\n"
+        f"- CHAPTER: {req.chapter}\n"
+        f"- TOPIC: {req.topic}\n"
+        f"- DEPTH: {req.depth}\n\n"
+        "### CONSTRAINTS\n"
+        "1. If depth is 'High' or 'Application', include a situational scenario.\n"
+        "2. Ensure distractors are plausible and logically related.\n"
+        "3. Use professional academic language.\n\n"
+        "### OUTPUT FORMAT\n"
+        "Strictly wrap the content in these tags for EACH question:\n"
+        "<Question> [Question text and options] </Question>\n"
+        "<Answer> [Correct answer] </Answer>"
+    )
 
     try:
         raw_output = ""
@@ -239,6 +327,9 @@ async def ask_llm(req: QueryRequest):
             response = ollama.chat(model='granite3.3:8b', messages=[{'role': 'user', 'content': prompt}])
             raw_output = response['message']['content']
         elif req.model_id == "rag-piped-llama":
+            topic_chunk, theme_chunk = ncert_rag.main(req.chapter, req.topic)
+            # RAG-Specific Prompt (for rag-piped-llama)
+            prompt_rag = f"### RAG CONTEXT:\n{topic_chunk}\n\n### TASK: Generate {req.qType} for {req.topic} using context. DOK: {req.depth}. OUTPUT: <Question>...</Question><Answer>...</Answer>"
             response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': prompt_rag}])
             raw_output = response['message']['content']
         else:
