@@ -267,22 +267,35 @@ class QueryRequest(BaseModel):
 def parse_ai_output(raw_text):
     if not raw_text:
         return []
-    
-    # Use findall to capture multiple questions and answers
-    questions = re.findall(r'<Question>(.*?)</Question>', raw_text, re.DOTALL)
-    answers = re.findall(r'<Answer>(.*?)</Answer>', raw_text, re.DOTALL)
-    
-    # Map them into a list of objects
+
+    # 1. Clean up potential LLM "pre-tag" errors (like a stray closing tag at the start)
+    # This removes any </Question> that appears before the first <Question>
+    first_open = raw_text.find("<Question>")
+    if first_open != -1:
+        raw_text = raw_text[first_open:]
+
+    # 2. Use a more robust findall
+    # We use (?:...) to handle cases where the model might use lowercase tags
+    questions = re.findall(r'<[Qq]uestion>(.*?)</[Qq]uestion>', raw_text, re.DOTALL)
+    answers = re.findall(r'<[Aa]nswer>(.*?)</[Aa]nswer>', raw_text, re.DOTALL)
+
     results = []
+    # Use the length of questions as the master count
     for i in range(len(questions)):
+        q_text = questions[i].strip()
+        
+        # If the LLM hallucinated an extra </Question> inside the text, clean it
+        q_text = q_text.replace("</Question>", "").replace("<Question>", "").strip()
+        
+        a_text = answers[i].strip() if i < len(answers) else "No answer provided."
+        
         results.append({
-            "question": questions[i].strip(),
-            "answer": answers[i].strip() if i < len(answers) else "No answer provided."
+            "question": q_text,
+            "answer": a_text
         })
-    
-    # Fallback if no tags were found
+
     if not results:
-        return [{"question": raw_text.strip(), "answer": "Logic embedded in text."}]
+        return [{"question": raw_text.strip(), "answer": "No valid tags found."}]
         
     return results
 
