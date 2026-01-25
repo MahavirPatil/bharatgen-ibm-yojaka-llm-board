@@ -180,6 +180,7 @@ from google import genai
 from openai import OpenAI
 from dotenv import load_dotenv
 import NCERT_RAG_PIPE.main as ncert_rag
+from transformers import BitsAndBytesConfig
 
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
@@ -400,11 +401,19 @@ async def ask_llm(req: QueryRequest):
             model_name = BASE_DIR / os.getenv("PARAM1_7B_RELATIVE_PATH")
             print(model_name)
             tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
+
+            # Inside the ask_llm function for param.1:7b
+            quant_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_quant_type="nf4"
+            )
+
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
-                trust_remote_code=True,
-                torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.bfloat32,
-                device_map="auto"
+                quantization_config=quant_config, # Add this
+                device_map="auto",
+                trust_remote_code=True
             )
             inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
             with torch.no_grad():
@@ -457,11 +466,18 @@ async def ask_llm(req: QueryRequest):
             model_name = BASE_DIR / os.getenv("PARAM1_7B_RELATIVE_PATH")
             print(model_name)
             tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
+            # Inside the ask_llm function for param.1:7b
+            quant_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_quant_type="nf4"
+            )
+
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
-                trust_remote_code=True,
-                torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.bfloat32,
-                device_map="auto"
+                quantization_config=quant_config, # Add this
+                device_map="auto",
+                trust_remote_code=True
             )
             inputs = tokenizer(prompt_rag, return_tensors="pt").to(model.device)
             with torch.no_grad():
