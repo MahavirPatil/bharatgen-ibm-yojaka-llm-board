@@ -180,6 +180,9 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import NCERT_RAG_PIPE.main as ncert_rag
 
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+
 load_dotenv()
 app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
@@ -284,7 +287,7 @@ def parse_ai_output(raw_text):
 
 @app.get("/")
 async def serve_index():
-    return FileResponse(BASE_DIR / "../frontend/index.html")
+    return FileResponse(BASE_DIR / os.getenv("FRONTEND_RELATIVE_PATH", ))
 
 @app.post("/ask")
 async def ask_llm(req: QueryRequest):
@@ -332,6 +335,45 @@ async def ask_llm(req: QueryRequest):
             prompt_rag = f"### RAG CONTEXT:\n{topic_chunk}\n\n### TASK: Generate {req.qType} for {req.topic} using context. DOK: {req.depth}. OUTPUT: <Question>...</Question><Answer>...</Answer>"
             response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': prompt_rag}])
             raw_output = response['message']['content']
+        elif req.model_id == "param.1:7b":
+            model_name = BASE_DIR / os.getenv("PARAM1_7B_RELATIVE_PATH")
+            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                trust_remote_code=True,
+                torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.bfloat32,
+                device_map="auto"
+            )
+            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+            with torch.no_grad():
+                output = model.generate(
+                    **inputs,
+                    max_new_tokens=300,
+                    do_sample=True,
+                    top_k=50,
+                    top_p=0.95,
+                    temperature=0.6,
+                    eos_token_id=tokenizer.eos_token_id,
+                    use_cache=False
+                )
+            raw_output = tokenizer.decode(output[0], skip_special_tokens=True)
+        elif req.model_id == "rag-piped-param":
+            topic_chunk, theme_chunk = ncert_rag.main(req.chapter, req.topic)
+            # RAG-Specific Prompt (for rag-piped-param)
+            prompt_rag = f"### RAG CONTEXT:\n{topic_chunk}\n\n### TASK: Generate {req.qType} for {req.topic} using context. DOK: {req.depth}. OUTPUT: <Question>...</Question><Answer>...</Answer>"
+            inputs = tokenizer(prompt_rag, return_tensors="pt").to(model.device)
+            with torch.no_grad():
+                output = model.generate(
+                    **inputs,
+                    max_new_tokens=300,
+                    do_sample=True,
+                    top_k=50,
+                    top_p=0.95,
+                    temperature=0.6,
+                    eos_token_id=tokenizer.eos_token_id,
+                    use_cache=False
+                )
+            raw_output = tokenizer.decode(output[0], skip_special_tokens=True)
         else:
             raw_output = "<Question>Model not found.</Question><Answer>N/A</Answer>"
 
