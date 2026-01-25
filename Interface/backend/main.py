@@ -184,9 +184,11 @@ from transformers import BitsAndBytesConfig
 
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
+
 print(f"Is CUDA available? {torch.cuda.is_available()}")
 print(f"Current device: {torch.cuda.current_device()}")
 print(f"Device name: {torch.cuda.get_device_name(0)}")
+
 load_dotenv()
 app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
@@ -194,6 +196,25 @@ BASE_DIR = Path(__file__).resolve().parent
 # Clients
 gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY_21"))
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+model_name = BASE_DIR / os.getenv("PARAM1_7B_RELATIVE_PATH")
+print(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
+# Inside the ask_llm function for param.1:7b
+quant_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.bfloat16,
+    bnb_4bit_quant_type="nf4"
+)
+
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    quantization_config=quant_config, # Add this
+    device_map="auto",
+    trust_remote_code=True
+)
+
+
 
 # class QueryRequest(BaseModel):
 #     model_id: str
@@ -398,24 +419,7 @@ async def ask_llm(req: QueryRequest):
             response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': prompt_rag}])
             raw_output = response['message']['content']
         elif req.model_id == "param.1:7b":
-            model_name = BASE_DIR / os.getenv("PARAM1_7B_RELATIVE_PATH")
-            print(model_name)
-            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
-
-            # Inside the ask_llm function for param.1:7b
-            quant_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch.bfloat16,
-                bnb_4bit_quant_type="nf4"
-            )
-
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                quantization_config=quant_config, # Add this
-                device_map="auto",
-                trust_remote_code=True
-            )
-            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+            inputs = tokenizer(prompt, return_tensors="pt", return_token_type_ids=False).to(model.device)
             with torch.no_grad():
                 output = model.generate(
                     **inputs,
@@ -463,23 +467,7 @@ async def ask_llm(req: QueryRequest):
                 "<Question> [Text + Options if MCQ] </Question>\n"
                 "<Answer> [Correct Answer + 1-sentence logic based on the Source Material] </Answer>"
             )
-            model_name = BASE_DIR / os.getenv("PARAM1_7B_RELATIVE_PATH")
-            print(model_name)
-            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
-            # Inside the ask_llm function for param.1:7b
-            quant_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch.bfloat16,
-                bnb_4bit_quant_type="nf4"
-            )
-
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                quantization_config=quant_config, # Add this
-                device_map="auto",
-                trust_remote_code=True
-            )
-            inputs = tokenizer(prompt_rag, return_tensors="pt").to(model.device)
+            inputs = tokenizer(prompt_rag, return_tensors="pt", return_token_type_ids=False).to(model.device)
             with torch.no_grad():
                 output = model.generate(
                     **inputs,
