@@ -3,660 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BharatGen - Yojaka Evaluator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Restored your original font and styling exactly */
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
-        body { font-family: 'JetBrains+Mono', monospace; }
-        .custom-glow { box-shadow: 0 0 25px rgba(59, 130, 246, 0.15); }
-        .loading-dots:after { content: '.'; animation: dots 1.5s steps(5, end) infinite; }
-        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } 80%, 100% { content: ''; } }
-        .output-container { scroll-behavior: smooth; }
-    </style>
-</head>
-<body class="bg-[#0b0f1a] text-slate-300 min-h-screen flex items-center justify-center p-6">
-
-    <div class="w-full max-w-3xl bg-[#161b2b] rounded-3xl border border-slate-800 p-8 custom-glow">
-        
-        <div class="flex items-center justify-between mb-8 border-b border-slate-800 pb-5">
-            <div>
-                <h1 class="text-xl font-bold text-white tracking-tighter italic">BHARAT<span class="text-blue-500">GEN</span></h1>
-                <p class="text-[10px] text-blue-500 font-bold uppercase tracking-[0.2em]">Project Yojaka // DOK Based Question Generator</p>
-            </div>
-            <div class="flex gap-2 text-xs text-slate-500 font-bold tracking-tighter">STABLE_V2.2_YJ</div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">1. Depth of Knowledge (DOK)</label>
-                <select id="depth" class="w-full bg-[#0b0f1a] border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 text-sm text-white">
-                    <option value="DOK level 1: Recall and Reproduction">DOK level 1: Recall and Reproduction</option>
-                    <option value="DOK level 2: Basic skills and concepts">DOK level 2: Basic skills and concepts</option>
-                    <option value="DOK level 3: Strategic thinking and reasoning">DOK level 3: Strategic thinking and reasoning</option>
-                    <option value="DOK level 4: Extended Thinking">DOK level 4: Extended Thinking</option>
-                </select>
-            </div>
-            
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">2. Question Type</label>
-                <select id="qType" class="w-full bg-[#0b0f1a] border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 text-sm text-white">
-                    <option value="Multiple Choice (MCQ)">Multiple Choice (MCQ)</option>
-                    <option value="Short Answer">Short Answer</option>
-                    <option value="True/False">True/False</option>
-                    <option value="Essay Prompt">Essay Prompt</option>
-                    <option value="Case Study Analysis">Case Study Analysis</option>
-                    <option value="Scenario-Based Problem">Scenario-Based Problem</option>
-                    <option value="Matching Items">Matching Items</option>
-                    <option value="Fill-in-the-Blanks">Fill-in-the-Blanks</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">3. Theme / Context</label>
-                <input id="theme" type="text" placeholder="e.g. Digital India, Rural Context" 
-                    class="w-full bg-[#0b0f1a] border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 text-sm text-white">
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">4. Topic</label>
-                <input id="topic" type="text" placeholder="e.g. Constitutional Law" 
-                    class="w-full bg-[#0b0f1a] border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 text-sm text-white">
-            </div>
-        </div>
-
-        <div class="mb-6">
-            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">5. Select Engine</label>
-            <select id="modelSelect" class="w-full bg-[#0b0f1a] border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 text-sm text-white">
-                <option value="local-llama">Local Llama 3</option>
-                <option value="qwen">Alibaba Qwen 3 (8B)</option>
-                <option value="granite3.3:8b">Granite 3 (8B)</option>
-                <option value="rag-piped-llama">RAG-Piped Llama</option>
-                <option value="gemini">Google Gemini 3 Flash Preview</option>
-            </select>
-        </div>
-
-        <button onclick="fetchAnswer()" id="runBtn" class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-white shadow-lg transition-all active:scale-[0.98]">
-            EXECUTE EVALUATION
-        </button>
-
-        <div id="responseArea" class="mt-8 hidden space-y-6 output-container">
-            
-            <div class="animate-in fade-in duration-500">
-                <div class="flex items-center justify-between mb-2 px-1">
-                    <div class="flex items-center gap-2">
-                        <span id="activeModelTag" class="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-widest">GEMINI</span>
-                        <span class="text-[9px] text-slate-600 uppercase font-bold">● Generated Question</span>
-                    </div>
-                    <button onclick="copyText('questionText')" class="text-[9px] text-slate-500 hover:text-white transition-colors uppercase font-bold">Copy</button>
-                </div>
-                <div id="questionText" class="w-full bg-black/40 border border-slate-800 rounded-2xl p-6 text-sm leading-relaxed whitespace-pre-wrap text-slate-200 min-h-[60px]">
-                    ...
-                </div>
-            </div>
-
-            <div class="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div class="flex items-center justify-between mb-2 px-1">
-                    <div class="flex items-center gap-2">
-                        <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest">ANSWER KEY</span>
-                        <span class="text-[9px] text-slate-600 uppercase font-bold">● Logic & Explanation</span>
-                    </div>
-                    <button onclick="copyText('answerText')" class="text-[9px] text-slate-500 hover:text-white transition-colors uppercase font-bold">Copy</button>
-                </div>
-                <div id="answerText" class="w-full bg-emerald-950/10 border border-emerald-900/30 rounded-2xl p-6 text-sm leading-relaxed whitespace-pre-wrap text-emerald-100/80 min-h-[60px]">
-                    ...
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    <script>
-        async function fetchAnswer() {
-            const topic = document.getElementById('topic').value;
-            const theme = document.getElementById('theme').value || "Standard";
-            const qType = document.getElementById('qType').value;
-            
-            if (!topic.trim()) return alert("Please enter a topic.");
-
-            const btn = document.getElementById('runBtn');
-            const outputArea = document.getElementById('responseArea');
-            const qText = document.getElementById('questionText');
-            const aText = document.getElementById('answerText');
-            const tag = document.getElementById('activeModelTag');
-
-            // UI Loading State
-            btn.innerHTML = 'GENERATING ASSESSMENT <span class="loading-dots"></span>';
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-            
-            outputArea.classList.remove('hidden');
-            qText.innerText = "Processing question logic...";
-            aText.innerText = "Preparing answer key...";
-            tag.innerText = document.getElementById('modelSelect').value.toUpperCase();
-
-            try {
-                const response = await fetch('/ask', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model_id: document.getElementById('modelSelect').value,
-                        depth: document.getElementById('depth').value,
-                        theme: theme,
-                        topic: topic,
-                        qType: qType
-                    })
-                });
-
-                const data = await response.json();
-                
-                if (response.ok) {
-                    // Update the text boxes with parsed JSON data
-                    qText.innerText = data.question;
-                    aText.innerText = data.answer;
-                } else {
-                    throw new Error(data.detail || "Server Error");
-                }
-
-            } catch (error) {
-                qText.innerHTML = `<span class="text-red-400 font-bold underline">ERROR:</span> ${error.message}`;
-                aText.innerText = "Failed to retrieve answer.";
-            } finally {
-                btn.innerHTML = 'EXECUTE EVALUATION';
-                btn.disabled = false;
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-        }
-
-        function copyText(id) {
-            const text = document.getElementById(id).innerText;
-            navigator.clipboard.writeText(text);
-            const originalText = document.querySelector(`button[onclick="copyText('${id}')"]`).innerText;
-            
-            // Temporary feedback for copy
-            const btn = document.querySelector(`button[onclick="copyText('${id}')"]`);
-            btn.innerText = "COPIED!";
-            setTimeout(() => btn.innerText = "COPY", 1500);
-        }
-    </script>
-</body>
-</html> -->
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BharatGen - Study Mode</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700;800&display=swap');
-        
-        /* Study-Oriented Color Palette */
-        :root {
-            --bg-study: #0f1420;
-            --card-study: #161d2f;
-            --text-main: #e2e8f0;
-            --accent-soft: #6366f1;
-        }
-
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--bg-study); 
-            color: var(--text-main);
-            background-image: radial-gradient(circle at 50% -20%, #1e293b 0%, #0f1420 80%);
-        }
-
-        .glass-panel { 
-            background: var(--card-study); 
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .active-subject { 
-            background: rgba(99, 102, 241, 0.15) !important; 
-            border-color: #6366f1 !important; 
-            color: #818cf8 !important;
-        }
-
-        .question-text {
-            line-height: 1.7;
-            letter-spacing: -0.01em;
-        }
-
-        /* Smooth Transition for Study Mode */
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
-</head>
-<body class="min-h-screen p-4 md:p-10">
-
-    <header class="max-w-6xl mx-auto flex justify-between items-center mb-12">
-        <div>
-            <h1 class="text-3xl font-bold tracking-tighter italic">BHARAT<span class="text-blue-500">GEN</span></h1>
-            <div class="h-1 w-12 bg-blue-500 rounded-full mt-1"></div>
-        </div>
-        <div class="flex items-center gap-4">
-            <span id="currentModelLabel" class="hidden md:block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Engine: Gemini 3 Flash</span>
-            <button onclick="toggleSettings()" class="w-10 h-10 glass-panel rounded-full flex items-center justify-center hover:bg-slate-800 transition">
-                <i class="fa-solid fa-sliders"></i>
-            </button>
-        </div>
-    </header>
-
-    <div id="settingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <div class="glass-panel p-8 rounded-3xl w-full max-w-md border border-slate-700">
-            <h3 class="text-xl font-bold mb-6 text-white">Execution Settings</h3>
-            <label class="text-xs font-bold text-slate-400 uppercase">Primary LLM Engine</label>
-            <select id="modelSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mt-2 text-white outline-none focus:border-blue-500">
-                <option value="gemini">Google Gemini 3 Flash Preview</option>
-                <option value="chatgpt">OpenAI GPT-4o</option>
-                <option value="local-llama">Local Llama 3</option>
-                <option value="qwen">Alibaba Qwen 3 (8B)</option>
-                <option value="granite3.3:8b">Granite 3 (8B)</option>
-                <option value="rag-piped-llama">RAG-Piped Llama</option>
-            </select>
-            <button onclick="toggleSettings()" class="w-full bg-blue-600 mt-8 py-4 rounded-xl font-bold hover:bg-blue-500 transition">Save Configuration</button>
-        </div>
-    </div>
-
-    <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        <aside class="lg:col-span-4 space-y-6">
-            <div class="glass-panel p-6 rounded-[2rem] space-y-6">
-                
-                <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Select Subject</label>
-                    <div class="grid grid-cols-2 gap-3 mt-3">
-                        <button onclick="setSubject('Math', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-xs font-bold transition-all hover:border-blue-500">MATHEMATICS</button>
-                        <button onclick="setSubject('Physics', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-xs font-bold transition-all hover:border-purple-500">PHYSICS</button>
-                        <button onclick="setSubject('Chemistry', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-xs font-bold transition-all hover:border-emerald-500">CHEMISTRY</button>
-                        <button onclick="setSubject('Biology', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-xs font-bold transition-all hover:border-rose-500">BIOLOGY</button>
-                    </div>
-                </div>
-
-                <div class="space-y-3">
-                    <input id="chapter" type="text" placeholder="NCERT Chapter (e.g. Integration)" class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm outline-none focus:border-blue-500 transition">
-                    <input id="topic" type="text" placeholder="Specific Topic (e.g. Parts)" class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm outline-none focus:border-blue-500 transition">
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <select id="depth" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500">
-                    <option value="DOK level 1: Recall and Reproduction">DOK level 1: Recall and Reproduction</option>
-                    <option value="DOK level 2: Basic skills and concepts">DOK level 2: Basic skills and concepts</option>
-                    <option value="DOK level 3: Strategic thinking and reasoning">DOK level 3: Strategic thinking and reasoning</option>
-                    <option value="DOK level 4: Extended Thinking">DOK level 4: Extended Thinking</option>
-                    </select>
-                    <input id="qCount" type="number" value="3" min="1" max="10" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500">
-                </div>
-
-                <button onclick="startSession()" id="genBtn" class="w-full bg-white text-black py-4 rounded-2xl font-black text-sm tracking-tighter hover:bg-blue-500 hover:text-white transition-all shadow-xl shadow-blue-500/10">
-                    GENERATE NCERT BATTLE
-                </button>
-            </div>
-        </aside>
-
-        <section class="lg:col-span-8">
-            <div id="welcomeView" class="glass-panel h-[500px] rounded-[3rem] flex flex-col items-center justify-center text-center p-10">
-                <div class="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6">
-                    <i class="fa-solid fa-bolt-lightning text-blue-500 text-2xl"></i>
-                </div>
-                <h2 class="text-2xl font-bold">Ready for a Challenge?</h2>
-                <p class="text-slate-500 mt-2 text-sm max-w-xs">Select your subject and chapter to generate NCERT-aligned questions.</p>
-            </div>
-
-            <div id="questionView" class="hidden space-y-4">
-                <div class="flex justify-between items-center px-4">
-                    <span id="progressBar" class="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Question 1 of 3</span>
-                    <div class="flex gap-2">
-                        <button onclick="prevQ()" class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center hover:bg-slate-800"><i class="fa-solid fa-arrow-left"></i></button>
-                        <button onclick="nextQ()" class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center hover:bg-slate-800"><i class="fa-solid fa-arrow-right"></i></button>
-                    </div>
-                </div>
-
-                <div class="glass-panel p-10 rounded-[3rem] border-t-4 border-blue-500 min-h-[300px] flex flex-col justify-center">
-                    <div id="qContent" class="text-xl leading-relaxed text-white">...</div>
-                </div>
-
-                <div class="space-y-4">
-                    <button id="revealBtn" onclick="toggleAnswer()" class="w-full py-4 rounded-2xl border-2 border-dashed border-slate-800 text-slate-500 font-bold hover:border-emerald-500 hover:text-emerald-500 transition">
-                        REVEAL ANSWER & LOGIC
-                    </button>
-                    <div id="aContent" class="hidden glass-panel p-8 rounded-[2rem] border-l-4 border-emerald-500 bg-emerald-500/5 text-emerald-100 italic leading-relaxed">
-                        ...
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <script>
-        let questions = [];
-        let cursor = 0;
-        let activeSubject = "";
-
-        function toggleSettings() { 
-            document.getElementById('settingsModal').classList.toggle('hidden');
-            const model = document.getElementById('modelSelect').value;
-            document.getElementById('currentModelLabel').innerText = `Engine: ${model}`;
-        }
-
-        function setSubject(s, btn) {
-            activeSubject = s;
-            document.querySelectorAll('.subj-btn').forEach(b => b.classList.remove('active-subject'));
-            btn.classList.add('active-subject');
-        }
-
-        function toggleAnswer() {
-            const a = document.getElementById('aContent');
-            a.classList.toggle('hidden');
-            document.getElementById('revealBtn').innerText = a.classList.contains('hidden') ? "REVEAL ANSWER & LOGIC" : "HIDE LOGIC";
-        }
-
-        async function startSession() {
-            const btn = document.getElementById('genBtn');
-            const topic = document.getElementById('topic').value;
-            if(!activeSubject || !topic) return alert("Pick a Subject and Topic!");
-
-            // UI Transition
-            questions = []; cursor = 0;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> COGITATING...';
-            document.getElementById('welcomeView').classList.add('hidden');
-            document.getElementById('questionView').classList.remove('hidden');
-            document.getElementById('qContent').className = "loading-shimmer h-24 rounded-2xl w-full";
-            
-            const count = document.getElementById('qCount').value;
-
-            for(let i=0; i<count; i++) {
-                try {
-                    const res = await fetch('/ask', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            model_id: document.getElementById('modelSelect').value,
-                            depth: document.getElementById('depth').value,
-                            subject: activeSubject,
-                            chapter: document.getElementById('chapter').value,
-                            topic: topic,
-                            qType: "MCQ"
-                        })
-                    });
-                    const data = await res.json();
-                    questions.push(data);
-                    if(i === 0) renderQ();
-                } catch(e) { console.error(e); }
-            }
-            btn.innerText = "GENERATE NCERT BATTLE";
-        }
-
-        function renderQ() {
-            const q = questions[cursor];
-            document.getElementById('qContent').className = "text-xl leading-relaxed text-white";
-            document.getElementById('qContent').innerText = q.question;
-            document.getElementById('aContent').innerText = q.answer;
-            document.getElementById('aContent').classList.add('hidden');
-            document.getElementById('progressBar').innerText = `Question ${cursor + 1} of ${questions.length}`;
-            document.getElementById('revealBtn').innerText = "REVEAL ANSWER & LOGIC";
-        }
-
-        function nextQ() { if(cursor < questions.length - 1) { cursor++; renderQ(); } }
-        function prevQ() { if(cursor > 0) { cursor--; renderQ(); } }
-    </script>
-</body>
-</html> -->
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BharatGen - Study Mode</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700;800&display=swap');
-        
-        /* Study-Oriented Color Palette */
-        :root {
-            --bg-study: #0f1420;
-            --card-study: #161d2f;
-            --text-main: #e2e8f0;
-            --accent-soft: #6366f1;
-        }
-
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--bg-study); 
-            color: var(--text-main);
-            background-image: radial-gradient(circle at 50% -20%, #1e293b 0%, #0f1420 80%);
-        }
-
-        .glass-panel { 
-            background: var(--card-study); 
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .active-subject { 
-            background: rgba(99, 102, 241, 0.15) !important; 
-            border-color: #6366f1 !important; 
-            color: #818cf8 !important;
-        }
-
-        .question-text {
-            line-height: 1.7;
-            letter-spacing: -0.01em;
-        }
-
-        /* Smooth Transition for Study Mode */
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
-</head>
-<body class="min-h-screen p-4 md:p-10 flex flex-col">
-
-    <header class="max-w-6xl mx-auto w-full flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-xl font-800 tracking-tighter">BHARAT<span class="text-indigo-500">GEN</span></h1>
-            <p class="text-[10px] text-slate-500 font-bold tracking-[0.3em] uppercase">NCERT Based Question Generator</p>
-        </div>
-        
-        <div class="flex items-center gap-6">
-            <div class="hidden md:flex flex-col items-end">
-                <span class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Active Engine</span>
-                <span id="currentModelLabel" class="text-xs font-medium text-slate-300">Gemini 3 Flash</span>
-            </div>
-            <button onclick="toggleSettings()" class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center hover:bg-slate-800 transition text-slate-400">
-                <i class="fa-solid fa-gear"></i>
-            </button>
-        </div>
-    </header>
-
-    <div id="settingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
-        <div class="glass-panel p-8 rounded-[2rem] w-full max-w-sm">
-            <h3 class="font-bold mb-4">Switch Intelligence Engine</h3>
-            <select id="modelSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm outline-none">
-                <option value="gemini">Google Gemini 3</option>
-                <option value="chatgpt">OpenAI GPT-4o</option>
-                <option value="local-llama">Local Llama 3</option>
-                <option value="qwen">Qwen 2.5</option>
-                <option value="granite3.3:8b">IBM Granite 3</option>
-                <option value="rag-piped-llama">RAG-Piped Llama</option>
-                <option value="param.1:7b">Param 1 7B</option>
-                <option value="rag-piped-param">RAG-Piped Param</option>
-            </select>
-            <button onclick="toggleSettings()" class="w-full bg-indigo-600 mt-6 py-4 rounded-xl font-bold hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20">Apply & Close</button>
-        </div>
-    </div>
-
-    <main class="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-10">
-        
-        <aside class="lg:col-span-4 space-y-4">
-            <div class="glass-panel p-6 rounded-[2.5rem] space-y-6">
-                <div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="setSubject('Math', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-[10px] font-bold tracking-widest hover:border-indigo-500 transition-all">MATH</button>
-                        <button onclick="setSubject('Physics', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-[10px] font-bold tracking-widest hover:border-indigo-500 transition-all">PHYSICS</button>
-                        <button onclick="setSubject('Chemistry', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-[10px] font-bold tracking-widest hover:border-indigo-500 transition-all">CHEMISTRY</button>
-                        <button onclick="setSubject('Biology', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-[10px] font-bold tracking-widest hover:border-indigo-500 transition-all">BIOLOGY</button>
-                    </div>
-                </div>
-
-                <div class="space-y-2">
-                    <input id="chapter" type="text" placeholder="Chapter Name" class="w-full bg-slate-950/50 border border-slate-800 rounded-2xl p-4 text-sm outline-none focus:border-indigo-500 transition">
-                    <input id="topic" type="text" placeholder="Topic Detail" class="w-full bg-slate-950/50 border border-slate-800 rounded-2xl p-4 text-sm outline-none focus:border-indigo-500 transition">
-                    <select id="qType" class="w-full bg-slate-950/50 border border-slate-800 rounded-2xl p-4 text-sm outline-none focus:border-indigo-500 transition">
-                        <option value="Multiple Choice (MCQ)">Multiple Choice (MCQ)</option>
-                        <option value="Short Answer">Short Answer</option>
-                        <option value="True/False">True/False</option>
-                        <option value="Essay Prompt">Essay Prompt</option>
-                        <option value="Case Study Analysis">Case Study Analysis</option>
-                        <option value="Fill-in-the-Blanks">Fill-in-the-Blanks</option>
-                    </select>
-                </div>
-
-                <div class="flex gap-2">
-                    <select id="depth" class="flex-1 bg-slate-950/50 border border-slate-800 rounded-2xl p-4 text-[10px] font-bold outline-none focus:border-indigo-500 uppercase tracking-tighter">
-                        <option value="DOK level 1: Recall & Reproduction">L1 Recall</option>
-                        <option value="DOK level 2: Skill and Concept">L2 Concept</option>
-                        <option value="DOK level 3: ">L3 Strategic</option>
-                        <option value="DOK level 4: Extended Thinking">L4 Extended Thinking</option>
-                    </select>
-                    <input id="qCount" type="number" value="3" class="w-16 bg-slate-950/50 border border-slate-800 rounded-2xl p-4 text-center font-bold text-sm outline-none">
-                </div>
-
-                <button onclick="startSession()" id="genBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-5 rounded-[1.8rem] font-bold text-xs tracking-[0.2em] shadow-xl shadow-indigo-600/10 transition-all active:scale-95">
-                    GENERATE SESSION
-                </button>
-            </div>
-        </aside>
-
-        <section class="lg:col-span-8">
-            <div id="welcomeView" class="glass-panel h-[480px] rounded-[3.5rem] flex flex-col items-center justify-center text-center p-8 border-dashed border-2 border-slate-800/50">
-                <i class="fa-solid fa-feather-pointed text-4xl text-slate-700 mb-6"></i>
-                <h2 class="text-xl font-bold text-slate-400">Session Workspace</h2>
-                <p class="text-slate-600 mt-2 text-sm max-w-xs">Configure your study parameters on the left to generate questions.</p>
-            </div>
-
-            <div id="questionView" class="hidden space-y-6 fade-in">
-                <div class="flex justify-between items-center px-6">
-                    <span id="progressBar" class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">Module 01 / Progress: 1 of 3</span>
-                    <div class="flex gap-2">
-                        <button onclick="prevQ()" class="w-12 h-12 glass-panel rounded-2xl flex items-center justify-center hover:bg-slate-800 active:scale-90 transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-                        <button onclick="nextQ()" class="w-12 h-12 glass-panel rounded-2xl flex items-center justify-center hover:bg-slate-800 active:scale-90 transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
-                    </div>
-                </div>
-
-                <div class="glass-panel p-12 rounded-[4rem] min-h-[320px] flex items-center">
-                    <div id="qContent" class="question-text text-xl md:text-2xl font-medium text-slate-100">...</div>
-                </div>
-
-                <div class="space-y-4 px-2">
-                    <button id="revealBtn" onclick="toggleAnswer()" class="w-full py-4 rounded-3xl border border-slate-800 text-slate-500 font-bold text-[10px] tracking-[0.2em] hover:border-emerald-500/50 hover:text-emerald-400 transition-all">
-                        REVEAL STUDY LOGIC
-                    </button>
-                    <div id="aContent" class="hidden glass-panel p-10 rounded-[3rem] border-l-2 border-emerald-500/30 bg-emerald-500/[0.02] text-emerald-100/80 italic text-base leading-relaxed">
-                        ...
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <script>
-        let questions = [];
-        let cursor = 0;
-        let activeSubject = "";
-
-        function toggleSettings() { 
-            const modal = document.getElementById('settingsModal');
-            modal.classList.toggle('hidden');
-            const modelName = document.getElementById('modelSelect').options[document.getElementById('modelSelect').selectedIndex].text;
-            document.getElementById('currentModelLabel').innerText = modelName;
-        }
-
-        function setSubject(s, btn) {
-            activeSubject = s;
-            document.querySelectorAll('.subj-btn').forEach(b => b.classList.remove('active-subject'));
-            btn.classList.add('active-subject');
-        }
-
-        function toggleAnswer() {
-            const a = document.getElementById('aContent');
-            a.classList.toggle('hidden');
-            document.getElementById('revealBtn').innerText = a.classList.contains('hidden') ? "REVEAL STUDY LOGIC" : "HIDE LOGIC";
-        }
-
-        async function startSession() {
-            const btn = document.getElementById('genBtn');
-            const topic = document.getElementById('topic').value;
-            const chapter = document.getElementById('chapter').value;
-            const qType = document.getElementById('qType').value; // Now captured from UI
-            const count = document.getElementById('qCount').value;
-
-            if(!activeSubject || !topic) return alert("Select Subject & Topic");
-
-            // UI Reset
-            questions = []; cursor = 0;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
-            btn.disabled = true;
-
-            document.getElementById('welcomeView').classList.add('hidden');
-            document.getElementById('questionView').classList.remove('hidden');
-            
-            try {
-                // Single API call for the batch
-                const res = await fetch('/ask', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        model_id: document.getElementById('modelSelect').value,
-                        depth: document.getElementById('depth').value,
-                        subject: activeSubject,
-                        chapter: chapter,
-                        topic: topic,
-                        qType: qType,
-                        num_questions: parseInt(count)
-                    })
-                });
-
-                const data = await res.json();
-                if (Array.isArray(data)) {
-                    questions = data;
-                    renderQ();
-                }
-            } catch(e) { 
-                console.error(e); 
-                alert("Generation failed. Check server logs.");
-            } finally {
-                btn.innerHTML = 'GENERATE SESSION';
-                btn.disabled = false;
-            }
-        }
-
-        function renderQ() {
-            const q = questions[cursor];
-            document.getElementById('qContent').innerText = q.question;
-            document.getElementById('aContent').innerText = q.answer;
-            document.getElementById('aContent').classList.add('hidden');
-            document.getElementById('progressBar').innerText = `MODULE 01 / PROGRESS: ${cursor + 1} OF ${questions.length}`;
-            document.getElementById('revealBtn').innerText = "REVEAL STUDY LOGIC";
-        }
-
-        function nextQ() { if(cursor < questions.length - 1) { cursor++; renderQ(); } }
-        function prevQ() { if(cursor > 0) { cursor--; renderQ(); } }
-    </script>
-</body>
-</html> -->
-
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BharatGen - Study Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -919,6 +265,399 @@
                 const results = await Promise.all(promises);
                 
                 // Flatten results and tag them by type
+                results.forEach((data, index) => {
+                    if (Array.isArray(data)) {
+                        const typeName = typeRequests[index].type;
+                        data.forEach(q => q.category = typeName);
+                        allQuestions.push(...data);
+                    }
+                });
+
+                if (shuffle) {
+                    allQuestions.sort(() => Math.random() - 0.5);
+                }
+
+                filteredQuestions = [...allQuestions];
+                renderTabs(typeRequests);
+                
+                document.getElementById('welcomeView').classList.add('hidden');
+                document.getElementById('questionView').classList.remove('hidden');
+                renderQ();
+
+            } catch(e) { 
+                console.error(e); 
+                alert("Generation failed. Please try again.");
+            } finally {
+                btn.innerHTML = 'GENERATE SESSION';
+                btn.disabled = false;
+            }
+        }
+
+        function renderTabs(reqs) {
+            const tabContainer = document.getElementById('typeTabs');
+            tabContainer.innerHTML = `<button onclick="filterType('All')" class="tab-btn px-6 py-2 glass-panel rounded-full text-[10px] font-bold active-btn">ALL</button>`;
+            
+            reqs.forEach(req => {
+                const btn = document.createElement('button');
+                btn.className = "tab-btn px-6 py-2 glass-panel rounded-full text-[10px] font-bold whitespace-nowrap";
+                btn.innerText = req.type.toUpperCase();
+                btn.onclick = () => filterType(req.type, btn);
+                tabContainer.appendChild(btn);
+            });
+        }
+
+        function filterType(type, btn) {
+            if(type === 'All') {
+                filteredQuestions = [...allQuestions];
+            } else {
+                filteredQuestions = allQuestions.filter(q => q.category === type);
+            }
+            
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-btn'));
+            if(btn) btn.classList.add('active-btn');
+            else document.querySelector('.tab-btn').classList.add('active-btn');
+
+            cursor = 0;
+            renderQ();
+        }
+
+        function renderQ() {
+            if(filteredQuestions.length === 0) return;
+            const q = filteredQuestions[cursor];
+            document.getElementById('qTypeLabel').innerText = q.category || "General Question";
+            document.getElementById('qContent').innerText = q.question;
+            document.getElementById('aContent').innerText = q.answer;
+            document.getElementById('aContent').classList.add('hidden');
+            document.getElementById('progressBar').innerText = `PROGRESS: ${cursor + 1} OF ${filteredQuestions.length}`;
+            document.getElementById('revealBtn').innerText = "REVEAL STUDY LOGIC";
+        }
+
+        function nextQ() { if(cursor < filteredQuestions.length - 1) { cursor++; renderQ(); } }
+        function prevQ() { if(cursor > 0) { cursor--; renderQ(); } }
+    </script>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BharatGen - Study Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700;800&display=swap');
+        
+        :root {
+            --bg-study: #0f1420;
+            --card-study: #161d2f;
+            --text-main: #e2e8f0;
+            --accent-soft: #6366f1;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--bg-study); 
+            color: var(--text-main);
+            background-image: radial-gradient(circle at 50% -20%, #1e293b 0%, #0f1420 80%);
+            overflow-x: hidden;
+        }
+
+        .glass-panel { 
+            background: var(--card-study); 
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .active-btn { 
+            background: rgba(99, 102, 241, 0.15) !important; 
+            border-color: #6366f1 !important; 
+            color: #818cf8 !important;
+        }
+
+        .type-input {
+            background: rgba(15, 20, 32, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s;
+        }
+
+        .type-input:focus-within {
+            border-color: #6366f1;
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+
+        /* Sidebar Transition */
+        #contextSidebar {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10 flex flex-col">
+
+    <header class="max-w-6xl mx-auto w-full flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-xl font-800 tracking-tighter">BHARAT<span class="text-indigo-500">GEN</span></h1>
+            <p class="text-[10px] text-slate-500 font-bold tracking-[0.3em] uppercase">NCERT Based Question Generator</p>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <div class="hidden md:flex flex-col items-end">
+                <span class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Active Engine</span>
+                <span id="currentModelLabel" class="text-xs font-medium text-slate-300">Gemini 3 Flash</span>
+            </div>
+            <button onclick="toggleSettings()" class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center hover:bg-slate-800 transition text-slate-400">
+                <i class="fa-solid fa-gear"></i>
+            </button>
+        </div>
+    </header>
+
+    <div id="contextSidebar" class="fixed top-0 right-0 h-full w-80 bg-slate-900/95 backdrop-blur-xl border-l border-white/5 shadow-2xl z-[60] p-8 translate-x-full">
+        <div class="flex justify-between items-center mb-8">
+            <h3 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Source Material</h3>
+            <button onclick="toggleSidebar()" class="text-slate-500 hover:text-white transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="sidebarContent" class="text-sm leading-relaxed text-slate-400 italic">
+            Select a topic and generate questions to see the reference context here.
+        </div>
+    </div>
+
+    <button id="sidebarToggleBtn" onclick="toggleSidebar()" class="hidden fixed right-6 bottom-6 w-14 h-14 bg-indigo-600 rounded-full shadow-2xl items-center justify-center text-white z-50 hover:scale-110 active:scale-95 transition-all">
+        <i class="fa-solid fa-book-open"></i>
+    </button>
+
+    <div id="settingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+        <div class="glass-panel p-8 rounded-[2rem] w-full max-w-sm">
+            <h3 class="font-bold mb-4">Switch Intelligence Engine</h3>
+            <select id="modelSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm outline-none">
+                <option value="gemini">Google Gemini 3</option>
+                <option value="chatgpt">OpenAI GPT-4o</option>
+                <option value="local-llama">Local Llama 3</option>
+                <option value="qwen">Qwen 2.5</option>
+                <option value="granite3.3:8b">IBM Granite 3</option>
+                <option value="rag-piped-llama">RAG-Piped Llama</option>
+                <option value="param.1:7b">Param 1 7B</option>
+                <option value="rag-piped-param">RAG-Piped Param</option>
+            </select>
+            <button onclick="toggleSettings()" class="w-full bg-indigo-600 mt-6 py-4 rounded-xl font-bold hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20">Apply & Close</button>
+        </div>
+    </div>
+
+    <main class="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        <aside class="lg:col-span-4 space-y-4">
+            <div class="glass-panel p-6 rounded-[2.5rem] space-y-6">
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setSubject('Math', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-[10px] font-bold tracking-widest hover:border-indigo-500 transition-all">MATH</button>
+                    <button onclick="setSubject('Physics', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-[10px] font-bold tracking-widest hover:border-indigo-500 transition-all">PHYSICS</button>
+                    <button onclick="setSubject('Chemistry', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-[10px] font-bold tracking-widest hover:border-indigo-500 transition-all">CHEMISTRY</button>
+                    <button onclick="setSubject('Biology', this)" class="subj-btn border border-slate-800 p-3 rounded-2xl text-[10px] font-bold tracking-widest hover:border-indigo-500 transition-all">BIOLOGY</button>
+                </div>
+
+                <div class="space-y-2">
+                    <select id="chapterDropdown" class="w-full bg-slate-950/50 border border-slate-800 rounded-2xl p-4 text-sm outline-none focus:border-indigo-500 transition text-slate-400">
+                        <option value="">Select Subject First</option>
+                    </select>
+                    <input id="topic" type="text" placeholder="Topic Detail" class="w-full bg-slate-950/50 border border-slate-800 rounded-2xl p-4 text-sm outline-none focus:border-indigo-500 transition">
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-widest ml-2">Complexity Level</p>
+                    <div class="flex gap-2">
+                        <button onclick="setDepth('DOK level 1: Recall & Reproduction', this)" class="depth-btn flex-1 border border-slate-800 p-3 rounded-xl text-[10px] font-bold active-btn">L1</button>
+                        <button onclick="setDepth('DOK level 2: Skill and Concept', this)" class="depth-btn flex-1 border border-slate-800 p-3 rounded-xl text-[10px] font-bold">L2</button>
+                        <button onclick="setDepth('DOK level 3: Strategic Thinking', this)" class="depth-btn flex-1 border border-slate-800 p-3 rounded-xl text-[10px] font-bold">L3</button>
+                        <button onclick="setDepth('DOK level 4: Extended Thinking', this)" class="depth-btn flex-1 border border-slate-800 p-3 rounded-xl text-[10px] font-bold">L4</button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-widest ml-2 text-center">Question Distribution</p>
+                    <div id="typeDistribution" class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto custom-scroll pr-1">
+                        </div>
+                </div>
+
+                <div class="flex items-center justify-between px-2">
+                    <span class="text-[10px] font-bold text-slate-400 tracking-wider">SHUFFLE ALL QUESTIONS</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="shuffleToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+
+                <button onclick="startSession()" id="genBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-5 rounded-[1.8rem] font-bold text-xs tracking-[0.2em] shadow-xl shadow-indigo-600/10 transition-all active:scale-95">
+                    GENERATE SESSION
+                </button>
+            </div>
+        </aside>
+
+        <section class="lg:col-span-8">
+            <div id="welcomeView" class="glass-panel h-[520px] rounded-[3.5rem] flex flex-col items-center justify-center text-center p-8 border-dashed border-2 border-slate-800/50">
+                <i class="fa-solid fa-feather-pointed text-4xl text-slate-700 mb-6"></i>
+                <h2 class="text-xl font-bold text-slate-400">Session Workspace</h2>
+                <p class="text-slate-600 mt-2 text-sm max-w-xs">Define your question distribution on the left to begin.</p>
+            </div>
+
+            <div id="questionView" class="hidden space-y-6 fade-in">
+                <div id="typeTabs" class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                    </div>
+
+                <div class="flex justify-between items-center px-6">
+                    <span id="progressBar" class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">PROGRESS: 1 of 3</span>
+                    <div class="flex gap-2">
+                        <button onclick="prevQ()" class="w-12 h-12 glass-panel rounded-2xl flex items-center justify-center hover:bg-slate-800 active:scale-90 transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                        <button onclick="nextQ()" class="w-12 h-12 glass-panel rounded-2xl flex items-center justify-center hover:bg-slate-800 active:scale-90 transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-12 rounded-[4rem] min-h-[320px] flex flex-col justify-center relative overflow-hidden">
+                    <div id="qTypeLabel" class="text-[9px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-4">...</div>
+                    <div id="qContent" class="question-text text-xl md:text-2xl font-medium text-slate-100">...</div>
+                </div>
+
+                <div class="space-y-4 px-2">
+                    <button id="revealBtn" onclick="toggleAnswer()" class="w-full py-4 rounded-3xl border border-slate-800 text-slate-500 font-bold text-[10px] tracking-[0.2em] hover:border-emerald-500/50 hover:text-emerald-400 transition-all">
+                        REVEAL STUDY LOGIC
+                    </button>
+                    <div id="aContent" class="hidden glass-panel p-10 rounded-[3rem] border-l-2 border-emerald-500/30 bg-emerald-500/[0.02] text-emerald-100/80 italic text-base leading-relaxed">
+                        ...
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const chapterMap = {
+            "Math": ["Sets", "Relations & Functions", "Trigonometric Functions", "Complex Numbers", "Linear Inequalities", "Permutations & Combinations", "Limits & Derivatives", "Probability"],
+            "Physics": ["Units & Measurements", "Motion in a Straight Line", "Motion in a Plane", "Laws of Motion", "Work, Energy & Power", "Gravitation", "Thermodynamics", "Atoms", "Nuclei"],
+            "Chemistry": ["Some Basic Concepts", "Structure of Atom", "Classification of Elements", "Chemical Bonding", "Equilibrium", "Redox Reactions", "Organic Chemistry Basics"],
+            "Biology": ["The Living World", "Biological Classification", "Plant Kingdom", "Animal Kingdom", "Cell: The Unit of Life", "Biomolecules", "Genetics", "Photosynthesis"]
+        };
+
+        const availableTypes = [
+            "Multiple Choice (MCQ)", "Short Answer", "True/False", 
+            "Essay Prompt", "Case Study Analysis", "Fill-in-the-Blanks"
+        ];
+
+        let allQuestions = [];
+        let filteredQuestions = [];
+        let cursor = 0;
+        let activeSubject = "";
+        let activeDepth = "DOK level 1: Recall & Reproduction";
+
+        // Initialize Type inputs
+        const typeContainer = document.getElementById('typeDistribution');
+        availableTypes.forEach(type => {
+            const div = document.createElement('div');
+            div.className = "type-input flex justify-between items-center p-3 rounded-2xl";
+            div.innerHTML = `
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">${type}</span>
+                <input type="number" data-type="${type}" value="0" min="0" class="q-type-count w-12 bg-transparent text-center font-bold text-indigo-400 outline-none">
+            `;
+            typeContainer.appendChild(div);
+        });
+
+        function toggleSettings() { 
+            const modal = document.getElementById('settingsModal');
+            modal.classList.toggle('hidden');
+            const modelName = document.getElementById('modelSelect').options[document.getElementById('modelSelect').selectedIndex].text;
+            document.getElementById('currentModelLabel').innerText = modelName;
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('contextSidebar');
+            sidebar.classList.toggle('translate-x-full');
+        }
+
+        function setSubject(s, btn) {
+            activeSubject = s;
+            document.querySelectorAll('.subj-btn').forEach(b => b.classList.remove('active-btn'));
+            btn.classList.add('active-btn');
+
+            // Update Dropdown
+            const dropdown = document.getElementById('chapterDropdown');
+            dropdown.innerHTML = '<option value="">Select Chapter</option>';
+            if (chapterMap[s]) {
+                chapterMap[s].forEach(chapter => {
+                    const opt = document.createElement('option');
+                    opt.value = chapter;
+                    opt.innerText = chapter;
+                    dropdown.appendChild(opt);
+                });
+            }
+        }
+
+        function setDepth(d, btn) {
+            activeDepth = d;
+            document.querySelectorAll('.depth-btn').forEach(b => b.classList.remove('active-btn'));
+            btn.classList.add('active-btn');
+        }
+
+        function toggleAnswer() {
+            const a = document.getElementById('aContent');
+            a.classList.toggle('hidden');
+            document.getElementById('revealBtn').innerText = a.classList.contains('hidden') ? "REVEAL STUDY LOGIC" : "HIDE LOGIC";
+        }
+
+        async function startSession() {
+            const btn = document.getElementById('genBtn');
+            const topic = document.getElementById('topic').value;
+            const chapter = document.getElementById('chapterDropdown').value; // Using dropdown value
+            const shuffle = document.getElementById('shuffleToggle').checked;
+
+            if(!activeSubject || !topic || !chapter) return alert("Select Subject, Chapter & Topic");
+
+            const typeRequests = [];
+            document.querySelectorAll('.q-type-count').forEach(input => {
+                const count = parseInt(input.value);
+                if(count > 0) {
+                    typeRequests.push({ type: input.dataset.type, count: count });
+                }
+            });
+
+            if(typeRequests.length === 0) return alert("Enter number of questions for at least one type.");
+
+            allQuestions = []; cursor = 0;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> GENERATING...';
+            btn.disabled = true;
+
+            // Prepare the sidebar content (Mocking context since main.py doesn't return it yet)
+            document.getElementById('sidebarContent').innerHTML = `
+                <p class='mb-2 font-bold text-white'>Topic: ${topic}</p>
+                <p>Retrieving reference chunks from NCERT ${activeSubject} Chapter: ${chapter}...</p>
+                <p class='mt-4 text-[10px] opacity-50'>Note: To see the full chunk, the backend return must include the 'topic_chunk' variable.</p>
+            `;
+            document.getElementById('sidebarToggleBtn').classList.remove('hidden');
+            document.getElementById('sidebarToggleBtn').classList.add('flex');
+
+            try {
+                const promises = typeRequests.map(req => 
+                    fetch('/ask', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            model_id: document.getElementById('modelSelect').value,
+                            depth: activeDepth,
+                            subject: activeSubject,
+                            chapter: chapter,
+                            topic: topic,
+                            qType: req.type,
+                            num_questions: req.count
+                        })
+                    }).then(r => r.json())
+                );
+
+                const results = await Promise.all(promises);
+                
                 results.forEach((data, index) => {
                     if (Array.isArray(data)) {
                         const typeName = typeRequests[index].type;
