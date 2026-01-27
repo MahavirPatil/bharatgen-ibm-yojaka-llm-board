@@ -181,9 +181,11 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import ncert_rag_pipe.main as ncert_rag
 from transformers import BitsAndBytesConfig
-
+from typing import List, Optional
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
+from model_runner import run_model, needs_rag, get_rag_context, initialize_clients
+from council import run_council_flow
 
 print(f"Is CUDA available? {torch.cuda.is_available()}")
 print(f"Current device: {torch.cuda.current_device()}")
@@ -193,26 +195,61 @@ load_dotenv()
 app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 
-# Clients
-gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY_21"))
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize clients (handle missing API keys gracefully)
+gemini_api_key = os.getenv("GEMINI_API_KEY_21")
+openai_api_key = os.getenv("OPENAI_API_KEY")
 
-model_name = BASE_DIR / os.getenv("PARAM1_7B_RELATIVE_PATH")
-print(model_name)
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
-# Inside the ask_llm function for param.1:7b
-quant_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.bfloat16,
-    bnb_4bit_quant_type="nf4"
-)
+gemini_client = None
+openai_client = None
 
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    quantization_config=quant_config, # Add this
-    device_map="auto",
-    trust_remote_code=True
-)
+if gemini_api_key:
+    try:
+        gemini_client = genai.Client(api_key=gemini_api_key)
+    except Exception as e:
+        print(f"Warning: Failed to initialize Gemini client: {e}")
+        gemini_client = None
+
+if openai_api_key:
+    try:
+        openai_client = OpenAI(api_key=openai_api_key)
+    except Exception as e:
+        print(f"Warning: Failed to initialize OpenAI client: {e}")
+        openai_client = None
+
+# Initialize Param model (handle missing path gracefully)
+param_model_path = os.getenv("PARAM1_7B_RELATIVE_PATH")
+tokenizer = None
+model = None
+
+if param_model_path:
+    model_name = BASE_DIR / param_model_path
+    print(f"Param model path: {model_name}")
+    if model_name.exists():
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
+            quant_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_quant_type="nf4"
+            )
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                quantization_config=quant_config,
+                device_map="auto",
+                trust_remote_code=True
+            )
+        except Exception as e:
+            print(f"Warning: Failed to initialize Param model: {e}")
+            tokenizer = None
+            model = None
+    else:
+        print(f"Warning: Param model path does not exist: {model_name}")
+else:
+    print("Warning: PARAM1_7B_RELATIVE_PATH not set, Param model will not be available")
+
+# Share clients with model_runner
+from model_runner import set_clients
+set_clients(gemini_client=gemini_client, openai_client=openai_client, tokenizer=tokenizer, model=model)
 
 
 
@@ -278,14 +315,21 @@ model = AutoModelForCausalLM.from_pretrained(
     
 #     # ... (existing imports)
 
+class BoardConfig(BaseModel):
+    chairman_model_id: str
+    member_model_ids: List[str]
+
 class QueryRequest(BaseModel):
-    model_id: str
+    # For backward compatibility, model_id is optional if board is provided
+    model_id: Optional[str] = None
     depth: str
     subject: str
     chapter: str
     topic: str
     qType: str
-    num_questions: int # Added this field
+    num_questions: int
+    # Board configuration (required for new flow)
+    board: Optional[BoardConfig] = None
 
 import re
 
@@ -331,171 +375,143 @@ async def serve_index():
 
 @app.post("/ask")
 async def ask_llm(req: QueryRequest):
-    # Your requested prompt structure
-    prompt = (
-        "### ROLE\n"
-        "Act as an expert Academic Assessment Designer specializing in NCERT/CBSE curriculum development. "
-        "Your goal is to create questions that move beyond simple memory and test true cognitive depth.\n\n"
-
-        "### COGNITIVE DEPTH CONTEXT (Bloom's Taxonomy x DOK)\n"
-        "You must adhere to the following definitions for the requested DEPTH:\n"
-        "- DOK 1 (Recall/Remember): Recall of a fact, term, or property. (e.g., Define, List, State)\n"
-        "- DOK 2 (Skills & Concepts/Understand & Apply): Use of information or conceptual knowledge. (e.g., Describe, Classify, Solve routine problems)\n"
-        "- DOK 3 (Strategic Thinking/Analyze & Evaluate): Reasoning, planning, and using evidence. (e.g., Explain why, Non-routine problem solving, Compare/Contrast phenomena)\n"
-        "- DOK 4 (Extended Thinking/Create): Complex synthesis and connection across chapters. (e.g., Create a model, Design an experiment, Critique a theoretical framework)\n\n"
-
-        "### PARAMETERS\n"
-        f"- SUBJECT: {req.subject}\n"
-        f"- CHAPTER: {req.chapter}\n"
-        f"- TOPIC: {req.topic}\n"
-        f"- QUESTION TYPE: {req.qType}\n"
-        f"- TARGET DEPTH: {req.depth}\n"
-        f"- QUANTITY: {req.num_questions}\n\n"
-
-        "### CONSTRAINTS\n"
-        "1. Content must be strictly based on NCERT syllabus standards.\n"
-        "2. Distractors for MCQs must be 'Common Misconceptions'—they should look correct to a student who has not understood the core concept.\n"
-        "3. For numericals, provide a step-by-step logical breakdown in the Answer section.\n"
-        "4. Use LaTeX for all mathematical formulas and chemical equations (e.g., $E=mc^2$).\n\n"
-
-        "### OUTPUT FORMAT (FOLLOW EXACTLY)\n"
-        "Generate each question in the following structure. Repeat this block for every question:\n"
-        "<Question>\n[Question text here. If MCQ, include options A, B, C, D]\n</Question>\n"
-        "<Answer>\n[Correct answer with a 2-sentence explanation of the underlying concept]\n</Answer>"
-    )
-
+    """
+    Question generation endpoint with LLM Board support.
+    If board config is provided, uses council flow. Otherwise falls back to single model.
+    """
     try:
-        raw_output = ""
-        if req.model_id == "gemini":
-            response = gemini_client.models.generate_content(model="gemini-3-flash-preview", contents=prompt)
-            raw_output = response.text
-        elif req.model_id == "chatgpt":
-            response = openai_client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}])
-            raw_output = response.choices[0].message.content
-        elif req.model_id == "local-llama":
-            response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': prompt}])
-            raw_output = response['message']['content']
-        elif req.model_id == "qwen":
-            response = ollama.chat(model='qwen3:8b', messages=[{'role': 'user', 'content': prompt}])
-            raw_output = response['message']['content']
-        elif req.model_id == "granite3.3:8b":
-            response = ollama.chat(model='granite3.3:8b', messages=[{'role': 'user', 'content': prompt}])
-            raw_output = response['message']['content']
-        elif req.model_id == "rag-piped-llama":
-            topic_chunk, theme_chunk = ncert_rag.main(req.chapter, req.topic)
-            # RAG-Specific Prompt (for rag-piped-llama)
-            prompt_rag = (
-                "### ROLE\n"
-                "Act as an expert NCERT Assessment Designer. Your task is to use the provided 'Source Material' "
-                "to generate high-quality questions. You must strictly adhere to the requested Cognitive Depth.\n\n"
-
-                "### SOURCE MATERIAL (RAG CONTEXT)\n"
-                f"{topic_chunk}\n\n"
-
-                "### COGNITIVE DEPTH FRAMEWORK (Bloom's x DOK)\n"
-                "If the source material is simple, you must still elevate the question to meet these levels:\n"
-                "- DOK 1 (Recall): Direct facts from the text. (e.g., 'What is...', 'Define...')\n"
-                "- DOK 2 (Understand/Apply): Interpreting the text. (e.g., 'How does X affect Y?', 'Classify...')\n"
-                "- DOK 3 (Analyze/Evaluate): Using the text to solve non-routine problems. (e.g., 'What would happen if...', 'Justify...')\n"
-                "- DOK 4 (Create/Synthesis): Connecting this text to broader scientific/mathematical principles.\n\n"
-
-                "### SESSION PARAMETERS\n"
-                f"- SUBJECT: {req.subject}\n"
-                f"- CHAPTER: {req.chapter}\n"
-                f"- TOPIC: {req.topic}\n"
-                f"- QUESTION TYPE: {req.qType}\n"
-                f"- REQUIRED DEPTH: {req.depth}\n\n"
-
-                "### INSTRUCTIONS\n"
-                "1. Use the Source Material for factual accuracy. Do not hallucinate outside NCERT bounds.\n"
-                "2. THE DEPTH IS PARAMOUNT: If the depth is DOK 3, do not provide a DOK 1 recall question even if the text is short.\n"
-                "3. Use LaTeX for all technical notation (e.g., $H_2O$, $\sin(\theta)$).\n\n"
-
-                "### OUTPUT FORMAT (FOLLOW EXACTLY)\n"
-                "Strictly wrap each question and answer pair in these tags:\n"
-                "<Question> [Text + Options if MCQ] </Question>\n"
-                "<Answer> [Correct Answer + 1-sentence logic based on the Source Material] </Answer>"
-            )
-            response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': prompt_rag}])
-            raw_output = response['message']['content']
-        elif req.model_id == "param.1:7b":
+        # Determine if we should use board flow
+        if req.board:
+            # Validate board configuration
+            if req.board.chairman_model_id in req.board.member_model_ids:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Chairman model cannot be in member list"
+                )
+            if len(req.board.member_model_ids) == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="At least one board member is required"
+                )
             
-            prompt = (f"Please generate {req.num_questions} high-quality {req.subject} NCERT assessment {req.qType} questions from the chapter of {req.chapter} on the topic of {req.topic} in the  level {req.depth}"
-                      "For depth use Blooms Taxonomy"
-                      "Level 1 means Remembering, Level 2 means Understanding and Applying, Level 3 means Analyzing, Level 4 means Evaluating and Creating"
-                "### OUTPUT FORMAT (FOLLOW EXACTLY)\n"
-                "Strictly wrap each question and answer pair in these tags:\n"
-                "<Question> [Text + Options if MCQ] </Question>\n"
-                "<Answer> [Correct Answer + 1-sentence logic based on the Source Material] </Answer>")
-            inputs = tokenizer(prompt, return_tensors="pt", return_token_type_ids=False).to(model.device)
-
-            with torch.no_grad():
-                output = model.generate(
-                    **inputs,
-                    max_new_tokens=300,
-                    do_sample=True,
-                    top_k=50,
-                    top_p=0.95,
-                    temperature=0.6,
-                    eos_token_id=tokenizer.eos_token_id,
-                    use_cache=True,  # Changed to True for speed
-                    pad_token_id=tokenizer.pad_token_id # Good practice to include
-                )
-            raw_output = tokenizer.decode(output[0], skip_special_tokens=True)
-        elif req.model_id == "rag-piped-param":
-            topic_chunk, theme_chunk = ncert_rag.main(req.chapter, req.topic)
-            # RAG-Specific Prompt (for rag-piped-param)
-            prompt_rag = (
+            # Run council flow
+            council_result = await run_council_flow(
+                chairman_model_id=req.board.chairman_model_id,
+                member_model_ids=req.board.member_model_ids,
+                subject=req.subject,
+                chapter=req.chapter,
+                topic=req.topic,
+                qType=req.qType,
+                depth=req.depth,
+                num_questions=req.num_questions
+            )
+            
+            # Parse final output to get questions
+            questions = parse_ai_output(council_result["final_output"])
+            
+            # Add board metadata to each question
+            for q in questions:
+                q["board_metadata"] = {
+                    "chairman": req.board.chairman_model_id,
+                    "members": req.board.member_model_ids,
+                    "chairman_proposal": council_result["chairman_proposal"],
+                    "member_opinions": council_result["member_opinions"]
+                }
+            
+            print(f"Council flow completed. Generated {len(questions)} questions.\n")
+            return questions
+        
+        # Fallback to single model (backward compatibility)
+        elif req.model_id:
+            # Build standard prompt
+            prompt = (
                 "### ROLE\n"
-                "Act as an expert NCERT Assessment Designer. Your task is to use the provided 'Source Material' "
-                "to generate high-quality questions. You must strictly adhere to the requested Cognitive Depth.\n\n"
+                "Act as an expert Academic Assessment Designer specializing in NCERT/CBSE curriculum development. "
+                "Your goal is to create questions that move beyond simple memory and test true cognitive depth.\n\n"
 
-                "### SOURCE MATERIAL (RAG CONTEXT)\n"
-                f"{topic_chunk}\n\n"
+                "### COGNITIVE DEPTH CONTEXT (Bloom's Taxonomy x DOK)\n"
+                "You must adhere to the following definitions for the requested DEPTH:\n"
+                "- DOK 1 (Recall/Remember): Recall of a fact, term, or property. (e.g., Define, List, State)\n"
+                "- DOK 2 (Skills & Concepts/Understand & Apply): Use of information or conceptual knowledge. (e.g., Describe, Classify, Solve routine problems)\n"
+                "- DOK 3 (Strategic Thinking/Analyze & Evaluate): Reasoning, planning, and using evidence. (e.g., Explain why, Non-routine problem solving, Compare/Contrast phenomena)\n"
+                "- DOK 4 (Extended Thinking/Create): Complex synthesis and connection across chapters. (e.g., Create a model, Design an experiment, Critique a theoretical framework)\n\n"
 
-                "### COGNITIVE DEPTH FRAMEWORK (Bloom's x DOK)\n"
-                "If the source material is simple, you must still elevate the question to meet these levels:\n"
-                "- DOK 1 (Recall): Direct facts from the text. (e.g., 'What is...', 'Define...')\n"
-                "- DOK 2 (Understand/Apply): Interpreting the text. (e.g., 'How does X affect Y?', 'Classify...')\n"
-                "- DOK 3 (Analyze/Evaluate): Using the text to solve non-routine problems. (e.g., 'What would happen if...', 'Justify...')\n"
-                "- DOK 4 (Create/Synthesis): Connecting this text to broader scientific/mathematical principles.\n\n"
-
-                "### SESSION PARAMETERS\n"
+                "### PARAMETERS\n"
                 f"- SUBJECT: {req.subject}\n"
                 f"- CHAPTER: {req.chapter}\n"
                 f"- TOPIC: {req.topic}\n"
                 f"- QUESTION TYPE: {req.qType}\n"
-                f"- REQUIRED DEPTH: {req.depth}\n\n"
+                f"- TARGET DEPTH: {req.depth}\n"
+                f"- QUANTITY: {req.num_questions}\n\n"
 
-                "### INSTRUCTIONS\n"
-                "1. Use the Source Material for factual accuracy. Do not hallucinate outside NCERT bounds.\n"
-                "2. THE DEPTH IS PARAMOUNT: If the depth is DOK 3, do not provide a DOK 1 recall question even if the text is short.\n"
-                "3. Use LaTeX for all technical notation (e.g., $H_2O$, $\sin(\theta)$).\n\n"
+                "### CONSTRAINTS\n"
+                "1. Content must be strictly based on NCERT syllabus standards.\n"
+                "2. Distractors for MCQs must be 'Common Misconceptions'—they should look correct to a student who has not understood the core concept.\n"
+                "3. For numericals, provide a step-by-step logical breakdown in the Answer section.\n"
+                "4. Use LaTeX for all mathematical formulas and chemical equations (e.g., $E=mc^2$).\n\n"
 
                 "### OUTPUT FORMAT (FOLLOW EXACTLY)\n"
-                "Strictly wrap each question and answer pair in these tags:\n"
-                "<Question> [Text + Options if MCQ] </Question>\n"
-                "<Answer> [Correct Answer + 1-sentence logic based on the Source Material] </Answer>"
+                "Generate each question in the following structure. Repeat this block for every question:\n"
+                "<Question>\n[Question text here. If MCQ, include options A, B, C, D]\n</Question>\n"
+                "<Answer>\n[Correct answer with a 2-sentence explanation of the underlying concept]\n</Answer>"
             )
-            inputs = tokenizer(prompt_rag, return_tensors="pt", return_token_type_ids=False).to(model.device)
+            
+            # Check if RAG is needed
+            context_chunks = None
+            if needs_rag(req.model_id):
+                topic_chunk, theme_chunk = get_rag_context(req.chapter, req.topic)
+                context_chunks = (topic_chunk, theme_chunk)
+                # Use RAG-specific prompt
+                prompt = (
+                    "### ROLE\n"
+                    "Act as an expert NCERT Assessment Designer. Your task is to use the provided 'Source Material' "
+                    "to generate high-quality questions. You must strictly adhere to the requested Cognitive Depth.\n\n"
 
-            with torch.no_grad():
-                output = model.generate(
-                    **inputs,
-                    max_new_tokens=300,
-                    do_sample=True,
-                    top_k=50,
-                    top_p=0.95,
-                    temperature=0.6,
-                    eos_token_id=tokenizer.eos_token_id,
-                    use_cache=True,  # Changed to True for speed
-                    pad_token_id=tokenizer.pad_token_id # Good practice to include
+                    "### SOURCE MATERIAL (RAG CONTEXT)\n"
+                    f"{topic_chunk}\n\n"
+
+                    "### COGNITIVE DEPTH FRAMEWORK (Bloom's x DOK)\n"
+                    "If the source material is simple, you must still elevate the question to meet these levels:\n"
+                    "- DOK 1 (Recall): Direct facts from the text. (e.g., 'What is...', 'Define...')\n"
+                    "- DOK 2 (Understand/Apply): Interpreting the text. (e.g., 'How does X affect Y?', 'Classify...')\n"
+                    "- DOK 3 (Analyze/Evaluate): Using the text to solve non-routine problems. (e.g., 'What would happen if...', 'Justify...')\n"
+                    "- DOK 4 (Create/Synthesis): Connecting this text to broader scientific/mathematical principles.\n\n"
+
+                    "### SESSION PARAMETERS\n"
+                    f"- SUBJECT: {req.subject}\n"
+                    f"- CHAPTER: {req.chapter}\n"
+                    f"- TOPIC: {req.topic}\n"
+                    f"- QUESTION TYPE: {req.qType}\n"
+                    f"- REQUIRED DEPTH: {req.depth}\n"
+                    f"- QUANTITY: {req.num_questions}\n\n"
+
+                    "### INSTRUCTIONS\n"
+                    "1. Use the Source Material for factual accuracy. Do not hallucinate outside NCERT bounds.\n"
+                    "2. THE DEPTH IS PARAMOUNT: If the depth is DOK 3, do not provide a DOK 1 recall question even if the text is short.\n"
+                    "3. Use LaTeX for all technical notation (e.g., $H_2O$, $\sin(\theta)$).\n\n"
+
+                    "### OUTPUT FORMAT (FOLLOW EXACTLY)\n"
+                    "Strictly wrap each question and answer pair in these tags:\n"
+                    "<Question> [Text + Options if MCQ] </Question>\n"
+                    "<Answer> [Correct Answer + 1-sentence logic based on the Source Material] </Answer>"
                 )
-            raw_output = tokenizer.decode(output[0], skip_special_tokens=True)
+            
+            raw_output = await run_model(req.model_id, prompt, context_chunks)
+            print(raw_output + "\n")
+            return parse_ai_output(raw_output)
         else:
-            raw_output = "<Question>Model not found.</Question><Answer>N/A</Answer>"
-        print(raw_output+"\n")
-        return parse_ai_output(raw_output)
+            raise HTTPException(
+                status_code=400,
+                detail="Either 'board' configuration or 'model_id' must be provided"
+            )
+    except HTTPException:
+        raise
     except Exception as e:
-        print(traceback.format_exc()) # This will print the full error to your terminal
-        raise HTTPException(status_code=500, detail=str(e))
+        error_trace = traceback.format_exc()
+        print("=" * 80)
+        print("ERROR in /ask endpoint:")
+        print(error_trace)
+        print("=" * 80)
+        # Include more details in the response for debugging
+        error_detail = f"{str(e)}\n\nTraceback:\n{error_trace[-1000:]}"  # Last 1000 chars of traceback
+        raise HTTPException(status_code=500, detail=error_detail)
