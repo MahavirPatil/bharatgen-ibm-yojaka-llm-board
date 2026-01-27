@@ -13,19 +13,30 @@ from typing import Optional
 import asyncio
 import ncert_rag_pipe.main as ncert_rag
 
+# Try to import Groq (optional)
+try:
+    from groq import Groq
+    GROQ_AVAILABLE = True
+except ImportError:
+    GROQ_AVAILABLE = False
+    Groq = None
+
 # Global clients - will be set by main.py
 _gemini_client = None
 _openai_client = None
+_groq_client = None
 _tokenizer = None
 _model = None
 
-def set_clients(gemini_client=None, openai_client=None, tokenizer=None, model=None):
+def set_clients(gemini_client=None, openai_client=None, groq_client=None, tokenizer=None, model=None):
     """Set the shared clients from main.py"""
-    global _gemini_client, _openai_client, _tokenizer, _model
+    global _gemini_client, _openai_client, _groq_client, _tokenizer, _model
     if gemini_client is not None:
         _gemini_client = gemini_client
     if openai_client is not None:
         _openai_client = openai_client
+    if groq_client is not None:
+        _groq_client = groq_client
     if tokenizer is not None:
         _tokenizer = tokenizer
     if model is not None:
@@ -33,7 +44,7 @@ def set_clients(gemini_client=None, openai_client=None, tokenizer=None, model=No
 
 def initialize_clients():
     """Initialize model clients if not already set. Should be called once at startup."""
-    global _gemini_client, _openai_client, _tokenizer, _model
+    global _gemini_client, _openai_client, _groq_client, _tokenizer, _model
     
     if _gemini_client is None:
         gemini_api_key = os.getenv("GEMINI_API_KEY_21")
@@ -51,6 +62,14 @@ def initialize_clients():
             except Exception as e:
                 print(f"Warning: Failed to initialize OpenAI client: {e}")
                 _openai_client = None
+    if _groq_client is None and GROQ_AVAILABLE:
+        groq_api_key = os.getenv("GROQ_API_KEY")
+        if groq_api_key:
+            try:
+                _groq_client = Groq(api_key=groq_api_key)
+            except Exception as e:
+                print(f"Warning: Failed to initialize Groq client: {e}")
+                _groq_client = None
     if _tokenizer is None or _model is None:
         BASE_DIR = Path(__file__).resolve().parent
         param_model_path = os.getenv("PARAM1_7B_RELATIVE_PATH")
@@ -111,6 +130,86 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None) ->
             lambda: _openai_client.chat.completions.create(
                 model="gpt-4o", 
                 messages=[{"role": "user", "content": prompt}]
+            )
+        )
+        return response.choices[0].message.content
+    elif model_id == "groq-llama-8b":
+        if not GROQ_AVAILABLE:
+            raise ValueError("Groq library not installed. Please install it with: pip install groq")
+        if _groq_client is None:
+            raise ValueError("Groq client not initialized. Please set GROQ_API_KEY environment variable.")
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: _groq_client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=131072
+            )
+        )
+        return response.choices[0].message.content
+    elif model_id == "groq-llama-70b":
+        if not GROQ_AVAILABLE:
+            raise ValueError("Groq library not installed. Please install it with: pip install groq")
+        if _groq_client is None:
+            raise ValueError("Groq client not initialized. Please set GROQ_API_KEY environment variable.")
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: _groq_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=32768
+            )
+        )
+        return response.choices[0].message.content
+    elif model_id == "groq-llama-guard":
+        if not GROQ_AVAILABLE:
+            raise ValueError("Groq library not installed. Please install it with: pip install groq")
+        if _groq_client is None:
+            raise ValueError("Groq client not initialized. Please set GROQ_API_KEY environment variable.")
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: _groq_client.chat.completions.create(
+                model="meta-llama/llama-guard-4-12b",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=1024
+            )
+        )
+        return response.choices[0].message.content
+    elif model_id == "groq-gpt-oss-120b":
+        if not GROQ_AVAILABLE:
+            raise ValueError("Groq library not installed. Please install it with: pip install groq")
+        if _groq_client is None:
+            raise ValueError("Groq client not initialized. Please set GROQ_API_KEY environment variable.")
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: _groq_client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=65536
+            )
+        )
+        return response.choices[0].message.content
+    elif model_id == "groq-gpt-oss-20b":
+        if not GROQ_AVAILABLE:
+            raise ValueError("Groq library not installed. Please install it with: pip install groq")
+        if _groq_client is None:
+            raise ValueError("Groq client not initialized. Please set GROQ_API_KEY environment variable.")
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: _groq_client.chat.completions.create(
+                model="openai/gpt-oss-20b",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=131072
             )
         )
         return response.choices[0].message.content

@@ -198,9 +198,11 @@ BASE_DIR = Path(__file__).resolve().parent
 # Initialize clients (handle missing API keys gracefully)
 gemini_api_key = os.getenv("GEMINI_API_KEY_21")
 openai_api_key = os.getenv("OPENAI_API_KEY")
+groq_api_key = os.getenv("GROQ_API_KEY")
 
 gemini_client = None
 openai_client = None
+groq_client = None
 
 if gemini_api_key:
     try:
@@ -215,6 +217,19 @@ if openai_api_key:
     except Exception as e:
         print(f"Warning: Failed to initialize OpenAI client: {e}")
         openai_client = None
+
+# Initialize Groq client (optional)
+try:
+    from groq import Groq
+    if groq_api_key:
+        try:
+            groq_client = Groq(api_key=groq_api_key)
+        except Exception as e:
+            print(f"Warning: Failed to initialize Groq client: {e}")
+            groq_client = None
+except ImportError:
+    print("Warning: Groq library not installed. Install with: pip install groq")
+    groq_client = None
 
 # Initialize Param model (handle missing path gracefully)
 param_model_path = os.getenv("PARAM1_7B_RELATIVE_PATH")
@@ -249,7 +264,7 @@ else:
 
 # Share clients with model_runner
 from model_runner import set_clients
-set_clients(gemini_client=gemini_client, openai_client=openai_client, tokenizer=tokenizer, model=model)
+set_clients(gemini_client=gemini_client, openai_client=openai_client, groq_client=groq_client, tokenizer=tokenizer, model=model)
 
 
 
