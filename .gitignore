@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+virtualenv/
+transformer/
+
+# Environment variables
+.env
+.env.local
+
+# Data and index files
+data/
+vector_db.index
+chunks_metadata.pkl
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Old structure (legacy)
+Interface/
