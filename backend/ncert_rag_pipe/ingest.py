@@ -12,10 +12,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))  # Go up two levels: ncert_rag_pipe -> backend -> root
 
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+INDEXES_DIR = os.path.join(PROJECT_ROOT, "indexes")
 CHUNK_SIZE = 1000 
 MODEL_NAME = "all-MiniLM-L6-v2"
-INDEX_PATH = os.path.join(PROJECT_ROOT, "vector_db.index")
-CHUNKS_PATH = os.path.join(PROJECT_ROOT, "chunks_metadata.pkl")
+INDEX_PATH = os.path.join(INDEXES_DIR, "vector_db.index")
+CHUNKS_PATH = os.path.join(INDEXES_DIR, "chunks_metadata.pkl")
 
 # -----------------------------
 # HELPER FUNCTIONS
@@ -83,9 +84,12 @@ def run_ingestion():
     print(f"✅ Success! Index saved to {INDEX_PATH}")
 
 if __name__ == "__main__":
-    # Ensure data directory exists
+    # Ensure directories exist
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
         print(f"📁 Created '{DATA_DIR}' folder. Place your PDFs there and re-run.")
+    elif not os.path.exists(INDEXES_DIR):
+        os.makedirs(INDEXES_DIR)
+        run_ingestion()
     else:
         run_ingestion()

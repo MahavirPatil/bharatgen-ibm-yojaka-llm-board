@@ -24,8 +24,10 @@ bharatgen-ibm-yojaka-llmquestion-board/
 ├── frontend/
 │   └── index.html         # Single-page UI
 ├── data/                   # NCERT PDFs (gitignored)
-├── vector_db.index        # FAISS index (gitignored)
-└── chunks_metadata.pkl    # Chunk metadata (gitignored)
+├── indexes/               # Vector indexes (gitignored)
+│   ├── vector_db.index
+│   └── chunks_metadata.pkl
+└── vector_store/          # Vector store (gitignored)
 ```
 
 ## Prerequisites
@@ -79,7 +81,7 @@ python backend/ncert_rag_pipe/ingest.py
 This will:
 - Extract text from all PDFs in `data/`
 - Chunk and embed the content
-- Create `vector_db.index` and `chunks_metadata.pkl` at the project root
+- Create `vector_db.index` and `chunks_metadata.pkl` in the `indexes/` folder
 
 ## Available Models
 

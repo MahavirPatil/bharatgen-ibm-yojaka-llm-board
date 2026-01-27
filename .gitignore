@@ -19,8 +19,8 @@ transformer/
 
 # Data and index files
 data/
-vector_db.index
-chunks_metadata.pkl
+indexes/
+vector_store/
 
 # IDE
 .vscode/

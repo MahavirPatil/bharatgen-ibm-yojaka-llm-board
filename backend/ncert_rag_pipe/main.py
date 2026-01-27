@@ -6,9 +6,10 @@ from sentence_transformers import SentenceTransformer
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))  # Go up two levels: ncert_rag_pipe -> backend -> root
 
-# Build absolute paths to the database files (at project root)
-INDEX_PATH = os.path.join(PROJECT_ROOT, "vector_db.index")
-CHUNKS_PATH = os.path.join(PROJECT_ROOT, "chunks_metadata.pkl")
+# Build absolute paths to the database files (in indexes folder at project root)
+INDEXES_DIR = os.path.join(PROJECT_ROOT, "indexes")
+INDEX_PATH = os.path.join(INDEXES_DIR, "vector_db.index")
+CHUNKS_PATH = os.path.join(INDEXES_DIR, "chunks_metadata.pkl")
 
 MODEL_NAME = "all-MiniLM-L6-v2"
 DEFAULT_K = 1
