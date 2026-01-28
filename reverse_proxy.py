@@ -37,6 +37,14 @@ class ProxyHandler(BaseHTTPRequestHandler):
         target = None
         path = self.path
         
+        # Check for missing trailing slash and redirect
+        for prefix in SERVICES.keys():
+            if path == prefix:
+                self.send_response(301)
+                self.send_header('Location', path + '/')
+                self.end_headers()
+                return
+
         for prefix, service_addr in SERVICES.items():
             if path.startswith(prefix):
                 target = service_addr
