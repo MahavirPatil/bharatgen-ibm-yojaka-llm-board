@@ -206,7 +206,7 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None) ->
                 model="openai/gpt-oss-20b",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
-                max_tokens=65536
+                max_tokens=8192
             )
         )
         return response.choices[0].message.content
