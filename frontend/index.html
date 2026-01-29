@@ -353,8 +353,8 @@
                         <!-- <option value="qwen">Qwen 2.5</option> -->
                         <!-- <option value="granite3.3:8b">IBM Granite 3</option> -->
                         <!-- <option value="rag-piped-llama">RAG-Piped Llama</option> -->
-                        <!-- <option value="param-1-7b-moe">Param 1 7B MoE</option> -->
-                        <!-- <option value="rag-piped-param-moe">RAG-Piped Param 7B MoE</option> -->
+                        <option value="param-1-2.9b-instruct">Param 1 2.9B Instruct</option>
+                        <option value="rag-piped-param-instruct">RAG-Piped Param 2.9B Instruct</option>
                     </select>
                 </div>
                 
@@ -413,6 +413,13 @@
                 </div>
 
                 <div class="space-y-3">
+                    <select 
+                        id="languageDropdown"
+                        class="w-full rounded-2xl p-4 text-sm outline-none transition-all"
+                    >
+                        <option value="en">English</option>
+                        <option value="hi">Hindi</option>
+                    </select>
                     <select 
                         id="chapterDropdown" 
                         class="w-full rounded-2xl p-4 text-sm outline-none transition-all"
@@ -686,6 +693,7 @@
         let cursor = 0;
         let activeSubject = "";
         let activeDepth = "DOK level 1: Recall & Reproduction";
+        let activeLanguage = localStorage.getItem('language') || "en";
         let currentChairman = "groq-llama-70b"; // Temporarily set to Groq default
         let currentMembers = ["groq-llama-8b"]; // Temporarily set to Groq default
         
@@ -704,8 +712,8 @@
             // { id: "qwen", name: "Qwen 2.5" },
             // { id: "granite3.3:8b", name: "IBM Granite 3" },
             // { id: "rag-piped-llama", name: "RAG-Piped Llama" },
-            // { id: "param-1-7b-moe", name: "Param 1 7B MoE" },
-            // { id: "rag-piped-param-moe", name: "RAG-Piped Param 7B MoE" }
+            { id: "param-1-2.9b-instruct", name: "Param 1 2.9B Instruct" },
+            { id: "rag-piped-param-instruct", name: "RAG-Piped Param 2.9B Instruct" }
         ];
         
         // Initialize member checkboxes
@@ -713,6 +721,10 @@
             const container = document.getElementById('memberCheckboxes');
             container.innerHTML = '';
             availableModels.forEach(model => {
+                // Param models are orchestrators only – they should not act as members/generators
+                if (model.id === "param-1-2.9b-instruct" || model.id === "rag-piped-param-instruct") {
+                    return;
+                }
                 const div = document.createElement('div');
                 div.className = "flex items-center space-x-3 p-2 rounded-lg transition";
                 div.style.cssText = "hover:background: var(--bg-secondary);";
@@ -768,6 +780,47 @@
         // Initialize on page load
         initializeMemberCheckboxes();
         updateChairmanLabel();
+        // Initialize language on page load
+        document.getElementById('languageDropdown').value = activeLanguage;
+        document.getElementById('languageDropdown').addEventListener('change', async function() {
+            activeLanguage = this.value;
+            localStorage.setItem('language', activeLanguage);
+            if (activeSubject) {
+                await loadChaptersForSubject(activeSubject);
+            }
+        });
+
+        async function loadChaptersForSubject(subject) {
+            const dropdown = document.getElementById('chapterDropdown');
+            dropdown.innerHTML = '<option value="">Loading chapters...</option>';
+            try {
+                const res = await fetch(`/chapters?subject=${encodeURIComponent(subject)}&language=${encodeURIComponent(activeLanguage)}`);
+                const data = await res.json();
+                const chapters = (data && Array.isArray(data.chapters)) ? data.chapters : [];
+                dropdown.innerHTML = '<option value="">Select Chapter</option>';
+                if (chapters.length > 0) {
+                    chapters.forEach(chapter => {
+                        const opt = document.createElement('option');
+                        opt.value = chapter;
+                        opt.innerText = chapter;
+                        dropdown.appendChild(opt);
+                    });
+                    return;
+                }
+            } catch (e) {
+                // fall through to local fallback
+            }
+            // Fallback to local chapterMap (English) if API unavailable/empty
+            dropdown.innerHTML = '<option value="">Select Chapter</option>';
+            if (chapterMap[subject]) {
+                chapterMap[subject].forEach(chapter => {
+                    const opt = document.createElement('option');
+                    opt.value = chapter;
+                    opt.innerText = chapter;
+                    dropdown.appendChild(opt);
+                });
+            }
+        }
 
         // Initialize Type inputs
         const typeContainer = document.getElementById('typeDistribution');
@@ -810,17 +863,8 @@
             document.querySelectorAll('.subj-btn').forEach(b => b.classList.remove('active-btn'));
             btn.classList.add('active-btn');
 
-            // Update Dropdown
-            const dropdown = document.getElementById('chapterDropdown');
-            dropdown.innerHTML = '<option value="">Select Chapter</option>';
-            if (chapterMap[s]) {
-                chapterMap[s].forEach(chapter => {
-                    const opt = document.createElement('option');
-                    opt.value = chapter;
-                    opt.innerText = chapter;
-                    dropdown.appendChild(opt);
-                });
-            }
+            // Update Dropdown from backend (language-aware)
+            loadChaptersForSubject(s);
         }
 
         function setDepth(d, btn) {
@@ -860,7 +904,7 @@
             // Prepare the sidebar content
             document.getElementById('sidebarContent').innerHTML = `
                 <p class='mb-2 font-bold' style="color: var(--text-primary);">Theme: ${theme}</p>
-                <p style="color: var(--text-secondary);">Retrieving reference chunks from NCERT ${activeSubject} Chapter: ${chapter}...</p>
+                <p style="color: var(--text-secondary);">Retrieving reference chunks (${activeLanguage}) for NCERT ${activeSubject} Chapter: ${chapter}...</p>
                 <p class='mt-4 text-xs opacity-70' style="color: var(--text-muted);">Note: To see the full chunk, the backend return must include the 'topic_chunk' variable.</p>
             `;
             document.getElementById('sidebarToggleBtn').classList.remove('hidden');
@@ -876,6 +920,7 @@
                                 chairman_model_id: currentChairman,
                                 member_model_ids: currentMembers
                             },
+                            language: activeLanguage,
                             depth: activeDepth,
                             subject: activeSubject,
                             chapter: chapter,

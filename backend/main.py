@@ -171,6 +171,7 @@
 import os
 import re
 import traceback
+import json
 import ollama
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -185,7 +186,7 @@ from typing import List, Optional
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 from model_runner import run_model, needs_rag, get_rag_context, initialize_clients
-from council import run_council_flow
+from council import run_council_flow, is_param_orchestrator
 
 print(f"Is CUDA available? {torch.cuda.is_available()}")
 print(f"Current device: {torch.cuda.current_device()}")
@@ -231,41 +232,32 @@ except ImportError:
     print("Warning: Groq library not installed. Install with: pip install groq")
     groq_client = None
 
-# Initialize Param-1-7B-MoE from local path
-tokenizer_moe = None
-model_moe = None
-param_moe_path = os.getenv("PARAM1_7B_MOE_PATH")
-if param_moe_path:
-    from pathlib import Path
-    model_path = Path(param_moe_path)
-    print(f"Param-1-7B-MoE model path: {model_path}")
-    if model_path.exists():
-        try:
-            tokenizer_moe = AutoTokenizer.from_pretrained(str(model_path), trust_remote_code=False)
-            quant_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch.bfloat16,
-                bnb_4bit_quant_type="nf4"
-            )
-            model_moe = AutoModelForCausalLM.from_pretrained(
-                str(model_path),
-                quantization_config=quant_config,
-                device_map="auto",
-                trust_remote_code=True
-            )
-            print("Successfully loaded Param-1-7B-MoE")
-        except Exception as e:
-            print(f"Warning: Failed to initialize Param-1-7B-MoE: {e}")
-            tokenizer_moe = None
-            model_moe = None
-    else:
-        print(f"Warning: Param-1-7B-MoE path does not exist: {model_path}")
-else:
-    print("Info: Param-1-7B-MoE not configured. Set PARAM1_7B_MOE_PATH to enable.")
+# Initialize Param-1-2.9B-Instruct
+tokenizer_29 = None
+model_29 = None
+model_29_id = os.getenv("PARAM1_2_9B_INSTRUCT_MODEL", "bharatgenai/Param-1-2.9B-Instruct")
+use_4bit = os.getenv("PARAM_2_9B_4BIT", "").lower() in ("1", "true", "yes")
+try:
+    print(f"Loading Param-1-2.9B-Instruct from: {model_29_id}")
+    tokenizer_29 = AutoTokenizer.from_pretrained(model_29_id, trust_remote_code=False)
+    load_kw = {"device_map": "auto", "trust_remote_code": True}
+    if use_4bit:
+        from transformers import BitsAndBytesConfig
+        load_kw["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_quant_type="nf4",
+        )
+    model_29 = AutoModelForCausalLM.from_pretrained(model_29_id, **load_kw)
+    print("Successfully loaded Param-1-2.9B-Instruct")
+except Exception as e:
+    print(f"Warning: Failed to initialize Param-1-2.9B-Instruct: {e}")
+    tokenizer_29 = None
+    model_29 = None
 
 # Share clients with model_runner
 from model_runner import set_clients
-set_clients(gemini_client=gemini_client, openai_client=openai_client, groq_client=groq_client, tokenizer_moe=tokenizer_moe, model_moe=model_moe)
+set_clients(gemini_client=gemini_client, openai_client=openai_client, groq_client=groq_client, tokenizer_29=tokenizer_29, model_29=model_29)
 
 
 
@@ -338,6 +330,7 @@ class BoardConfig(BaseModel):
 class QueryRequest(BaseModel):
     # For backward compatibility, model_id is optional if board is provided
     model_id: Optional[str] = None
+    language: str = "en"
     depth: str
     subject: str
     chapter: str
@@ -405,6 +398,78 @@ def parse_ai_output(raw_text):
 async def serve_index():
     return FileResponse(BASE_DIR / os.getenv("FRONTEND_RELATIVE_PATH", "../frontend/index.html"))
 
+@app.get("/chapters")
+async def list_chapters(subject: str, language: str = "en"):
+    """
+    Return chapter names for a subject and language based on:
+      indexes/<language>/chapters_manifest.json
+    """
+    language = (language or "en").lower()
+    if language not in ("en", "hi"):
+        raise HTTPException(status_code=400, detail="language must be 'en' or 'hi'")
+
+    manifest_path = (BASE_DIR.parent / "indexes" / language / "chapters_manifest.json").resolve()
+    if not manifest_path.exists():
+        return {"chapters": []}
+
+    try:
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        chapters = data.get(subject, [])
+        if not isinstance(chapters, list):
+            chapters = []
+        return {"chapters": chapters}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read chapters manifest: {e}")
+
+
+@app.get("/test-param")
+async def test_param():
+    """
+    Minimal health check for Param-1-2.9B-Instruct generation.
+    Uses the already-loaded model; runs a tiny prompt (max_new_tokens=10).
+    Returns { "ok": true, "output": "...", "elapsed_s": float } or { "ok": false, "error": "..." }.
+    """
+    import time
+    from model_runner import _tokenizer_29, _model_29
+    
+    if _tokenizer_29 is None or _model_29 is None:
+        return {"ok": False, "error": "Param-1-2.9B-Instruct model not loaded. Ensure transformers can fetch bharatgenai/Param-1-2.9B-Instruct."}
+
+    prompt = "Say hello in one word."
+    t0 = time.perf_counter()
+    try:
+        out = await run_model("param-1-2.9b-instruct", prompt, None)
+        elapsed = time.perf_counter() - t0
+        return {"ok": True, "output": out, "elapsed_s": round(elapsed, 2)}
+    except Exception as e:
+        elapsed = time.perf_counter() - t0
+        return {"ok": False, "error": str(e), "elapsed_s": round(elapsed, 2)}
+
+
+@app.get("/test-param-2.9b")
+async def test_param_29b():
+    """
+    Minimal health check for Param-1-2.9B-Instruct (bharatgenai/Param-1-2.9B-Instruct).
+    Runs a tiny chat-format prompt. Returns { "ok": true, "output": "...", "elapsed_s": float } or { "ok": false, "error": "..." }.
+    """
+    import time
+    from model_runner import initialize_clients, _tokenizer_29, _model_29
+
+    initialize_clients()
+    if _tokenizer_29 is None or _model_29 is None:
+        return {"ok": False, "error": "Param-1-2.9B-Instruct failed to load. Set PARAM1_2_9B_INSTRUCT_MODEL (optional) and ensure transformers can fetch bharatgenai/Param-1-2.9B-Instruct."}
+
+    prompt = "Say hello in one word."
+    t0 = time.perf_counter()
+    try:
+        out = await run_model("param-1-2.9b-instruct", prompt, None)
+        elapsed = time.perf_counter() - t0
+        return {"ok": True, "output": out, "elapsed_s": round(elapsed, 2)}
+    except Exception as e:
+        elapsed = time.perf_counter() - t0
+        return {"ok": False, "error": str(e), "elapsed_s": round(elapsed, 2)}
+
+
 @app.post("/ask")
 async def ask_llm(req: QueryRequest):
     """
@@ -430,6 +495,7 @@ async def ask_llm(req: QueryRequest):
             council_result = await run_council_flow(
                 chairman_model_id=req.board.chairman_model_id,
                 member_model_ids=req.board.member_model_ids,
+                language=req.language,
                 subject=req.subject,
                 chapter=req.chapter,
                 theme=req.theme,
@@ -440,12 +506,28 @@ async def ask_llm(req: QueryRequest):
             
             # Parse final output to get questions
             questions = parse_ai_output(council_result["final_output"])
+            # Fallback when synthesis didn't parse: Param uses first member's question; others use chairman proposal
+            if not questions:
+                if is_param_orchestrator(req.board.chairman_model_id):
+                    member_opinions = council_result.get("member_opinions") or []
+                    if member_opinions and member_opinions[0].get("raw_output"):
+                        questions = parse_ai_output(member_opinions[0]["raw_output"])
+                        if questions:
+                            print("[Param orchestrator] Using first member's question as fallback (chairman output did not parse).")
+                else:
+                    # e.g. 70B chairman + 8B member: use chairman's proposal if synthesis didn't parse
+                    chairman_proposal = council_result.get("chairman_proposal") or ""
+                    if chairman_proposal:
+                        questions = parse_ai_output(chairman_proposal)
+                        if questions:
+                            print("[Council] Using chairman proposal as fallback (synthesis output did not parse).")
             
             # Add board metadata to each question
             for q in questions:
                 q["board_metadata"] = {
                     "chairman": req.board.chairman_model_id,
                     "members": req.board.member_model_ids,
+                    "language": req.language,
                     "chairman_proposal": council_result["chairman_proposal"],
                     "member_opinions": council_result["member_opinions"]
                 }
@@ -456,6 +538,18 @@ async def ask_llm(req: QueryRequest):
         # Fallback to single model (backward compatibility)
         elif req.model_id:
             # Build standard prompt
+            lang = (req.language or "en").lower()
+            if lang == "hi":
+                lang_block = (
+                    "### OUTPUT LANGUAGE\n"
+                    "Write all Questions and Answers in Hindi (Devanagari script), while preserving LaTeX/math notation as-is.\n\n"
+                )
+            else:
+                lang_block = (
+                    "### OUTPUT LANGUAGE\n"
+                    "Write all Questions and Answers in English.\n\n"
+                )
+
             prompt = (
                 "### ROLE\n"
                 "Act as an expert Academic Assessment Designer specializing in NCERT/CBSE curriculum development. "
@@ -476,6 +570,8 @@ async def ask_llm(req: QueryRequest):
                 f"- TARGET DEPTH: {req.depth}\n"
                 f"- QUANTITY: {req.num_questions}\n\n"
 
+                f"{lang_block}"
+
                 "### CONSTRAINTS\n"
                 "1. Content must be strictly based on NCERT syllabus standards.\n"
                 "2. Distractors for MCQs must be 'Common Misconceptions'—they should look correct to a student who has not understood the core concept.\n"
@@ -491,7 +587,7 @@ async def ask_llm(req: QueryRequest):
             # Check if RAG is needed
             context_chunks = None
             if needs_rag(req.model_id):
-                topic_chunk, theme_chunk = get_rag_context(req.chapter, req.theme)
+                topic_chunk, theme_chunk = get_rag_context(req.chapter, req.theme, language=req.language)
                 # More aggressive truncation - limit to ~800 chars each to keep total prompt manageable
                 max_chunk_length = 800
                 if len(topic_chunk) > max_chunk_length:

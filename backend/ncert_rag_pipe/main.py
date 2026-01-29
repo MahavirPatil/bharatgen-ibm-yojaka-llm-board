@@ -8,24 +8,64 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))  # Go up two levels: n
 
 # Build absolute paths to the database files (in indexes folder at project root)
 INDEXES_DIR = os.path.join(PROJECT_ROOT, "indexes")
-INDEX_PATH = os.path.join(INDEXES_DIR, "vector_db.index")
-CHUNKS_PATH = os.path.join(INDEXES_DIR, "chunks_metadata.pkl")
 
 MODEL_NAME = "all-MiniLM-L6-v2"
 DEFAULT_K = 1
 
-# Global RAG retriever instance (cached to avoid reloading on every call)
-_rag_retriever = None
+def _index_paths(language: str) -> tuple[str, str]:
+    """
+    Language-aware index paths.
+    Expects:
+      indexes/<language>/vector_db.index
+      indexes/<language>/chunks_metadata.pkl
+    """
+    lang_dir = os.path.join(INDEXES_DIR, language)
+    return (
+        os.path.join(lang_dir, "vector_db.index"),
+        os.path.join(lang_dir, "chunks_metadata.pkl"),
+    )
+
+
+def _resolve_index_paths(language: str) -> tuple[str, str]:
+    """
+    Resolve index paths with fallback for legacy flat layout.
+    - Prefer indexes/<lang>/vector_db.index when it exists.
+    - For "en" only: fall back to flat indexes/vector_db.index + chunks_metadata.pkl
+      when indexes/en/ does not exist.
+    - Otherwise raise FileNotFoundError with a clear message.
+    """
+    index_path, chunks_path = _index_paths(language)
+    if os.path.isfile(index_path) and os.path.isfile(chunks_path):
+        return index_path, chunks_path
+    # Legacy flat layout (indexes/vector_db.index, indexes/chunks_metadata.pkl)
+    flat_index = os.path.join(INDEXES_DIR, "vector_db.index")
+    flat_chunks = os.path.join(INDEXES_DIR, "chunks_metadata.pkl")
+    if language == "en" and os.path.isfile(flat_index) and os.path.isfile(flat_chunks):
+        return flat_index, flat_chunks
+    if language == "hi":
+        raise FileNotFoundError(
+            "Hindi RAG index not found at indexes/hi/vector_db.index. "
+            "Add NCERT books under data/Hindi or data/hi, then run: python backend/ncert_rag_pipe/ingest.py"
+        )
+    raise FileNotFoundError(
+        f"RAG index for language '{language}' not found. "
+        f"Expected indexes/{language}/vector_db.index (or, for 'en' only, flat indexes/vector_db.index). "
+        "Run ingestion: python backend/ncert_rag_pipe/ingest.py (see README)."
+    )
+
+# Global RAG retrievers (cached per language)
+_rag_retrievers: dict[str, "RAGRetriever"] = {}
 
 class RAGRetriever:
-    def __init__(self):
-        # Load the model and the pre-built vector database
-        print("Loading RAG retriever (this happens once)...")
+    def __init__(self, language: str):
+        self.language = language
+        index_path, chunks_path = _resolve_index_paths(language)
+        print(f"Loading RAG retriever for language='{language}' (this happens once)...")
         self.model = SentenceTransformer(MODEL_NAME)
-        self.index = faiss.read_index(INDEX_PATH)
-        with open(CHUNKS_PATH, "rb") as f:
+        self.index = faiss.read_index(index_path)
+        with open(chunks_path, "rb") as f:
             self.chunks = pickle.load(f)
-        print("RAG retriever loaded successfully!")
+        print(f"RAG retriever loaded successfully for language='{language}'!")
 
     def get_context(self, query, k=DEFAULT_K):
         """
@@ -46,15 +86,15 @@ class RAGRetriever:
         
         return "\n\n".join(retrieved_texts), best_score
 
-def get_retriever():
-    """Get or create the global RAG retriever instance (singleton pattern)."""
-    global _rag_retriever
-    if _rag_retriever is None:
-        _rag_retriever = RAGRetriever()
-    return _rag_retriever
+def get_retriever(language: str = "en"):
+    """Get or create the global RAG retriever instance for a given language."""
+    global _rag_retrievers
+    if language not in _rag_retrievers:
+        _rag_retrievers[language] = RAGRetriever(language=language)
+    return _rag_retrievers[language]
 
-def main(topic_input, theme_input):
-    retriever = get_retriever()
+def main(topic_input, theme_input, language: str = "en"):
+    retriever = get_retriever(language=language)
 
     # 2. Retrieval
     topic_chunk, t_score = retriever.get_context(topic_input)

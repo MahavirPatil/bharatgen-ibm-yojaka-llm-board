@@ -57,6 +57,11 @@ FRONTEND_RELATIVE_PATH=../frontend/index.html
 
 # Path to Param-1-7B-MoE model (absolute or relative path)
 PARAM1_7B_MOE_PATH=/home/jashwanth/Param-1-7B-MoE
+
+# Optional: Param-1-2.9B-Instruct (HuggingFace). Default: bharatgenai/Param-1-2.9B-Instruct
+# PARAM1_2_9B_INSTRUCT_MODEL=bharatgenai/Param-1-2.9B-Instruct
+# Optional: Use 4-bit quantization for 2.9B to save VRAM
+# PARAM_2_9B_4BIT=1
 ```
 
 ## Running the Application
@@ -101,6 +106,7 @@ This will:
 
 ### Param Models
 - `param-1-7b-moe` - Param 1 7B MoE model (requires PARAM1_7B_MOE_PATH)
+- `param-1-2.9b-instruct` - [Param 1 2.9B Instruct](https://huggingface.co/bharatgenai/Param-1-2.9B-Instruct) (loads from HuggingFace; optional PARAM1_2_9B_INSTRUCT_MODEL, PARAM_2_9B_4BIT)
 - `rag-piped-param-moe` - Param 1 7B MoE with RAG context
 
 ### RAG-Enhanced Models
