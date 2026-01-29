@@ -35,7 +35,7 @@ def build_member_generate_one_prompt(subject: str, chapter: str, theme: str, qTy
             "Write the entire Question and Answer in English.\n\n"
         )
     rag_block = ""
-    if topic_chunk and theme_chunk:
+    if topic_chunk or theme_chunk:
         rag_block = (
             "\n\n### SOURCE MATERIAL (RAG CONTEXT)\n"
             f"{topic_chunk}\n\n"
@@ -90,7 +90,7 @@ def build_chairman_proposal_prompt(subject: str, chapter: str, theme: str, qType
         lang_reminder = ""
 
     rag_context = ""
-    if topic_chunk and theme_chunk:
+    if topic_chunk or theme_chunk:
         rag_context = (
             "\n\n### SOURCE MATERIAL (RAG CONTEXT)\n"
             f"{topic_chunk}\n\n"
@@ -153,7 +153,7 @@ def build_member_review_prompt(subject: str, chapter: str, theme: str, qType: st
         lang_reminder = ""
 
     rag_context = ""
-    if topic_chunk and theme_chunk:
+    if topic_chunk or theme_chunk:
         rag_context = (
             "\n\n### SOURCE MATERIAL (RAG CONTEXT)\n"
             f"{topic_chunk}\n\n"
@@ -217,7 +217,7 @@ def build_chairman_synthesis_prompt(subject: str, chapter: str, theme: str, qTyp
         lang_reminder = ""
 
     rag_context = ""
-    if topic_chunk and theme_chunk:
+    if topic_chunk or theme_chunk:
         rag_context = (
             "\n\n### SOURCE MATERIAL (RAG CONTEXT)\n"
             f"{topic_chunk}\n\n"
@@ -631,8 +631,8 @@ async def run_council_flow(chairman_model_id: str, member_model_ids: List[str],
     final_output = await run_model(chairman_model_id, synthesis_prompt, context_chunks)
     
     source_chunks = None
-    if topic_chunk and theme_chunk:
-        source_chunks = {"topic_chunk": topic_chunk, "theme_chunk": theme_chunk}
+    if topic_chunk or theme_chunk:
+        source_chunks = {"topic_chunk": topic_chunk or "", "theme_chunk": theme_chunk or ""}
     return {
         "chairman_proposal": chairman_output,
         "member_opinions": member_opinions,

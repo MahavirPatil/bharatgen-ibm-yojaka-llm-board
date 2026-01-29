@@ -55,15 +55,16 @@
     </style>
 </head>
 <body class="p-4 md:p-6">
-    <div id="noContext" class="hidden text-center py-16 px-4">
-        <p class="text-lg mb-4" style="color: var(--text-secondary);">No source context. Use <strong>Explore in PDF</strong> from a question on the generator page.</p>
-        <a href="/" class="btn-primary inline-block">Back to Generator</a>
+    <div id="noContext" class="hidden text-center py-16 px-4 max-w-md mx-auto">
+        <p class="text-lg mb-4" style="color: var(--text-secondary);">No source context.</p>
+        <p class="text-sm mb-6" style="color: var(--text-muted);">Open this page by clicking <strong>Explore in PDF</strong> on a question (after generating with a RAG model). Use the same browser and same site (e.g. both <code>localhost:8002</code> or both <code>127.0.0.1:8002</code>).</p>
+        <a id="backToGenerator" href="/" class="btn-primary inline-block">Back to Generator</a>
     </div>
 
     <div id="exploreApp" class="hidden max-w-7xl mx-auto">
         <header class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-bold" style="color: var(--text-primary);">Explore Source</h1>
-            <a href="/" class="text-sm" style="color: var(--accent-primary);">Back to Generator</a>
+            <a id="headerBackLink" href="/" class="text-sm" style="color: var(--accent-primary);">Back to Generator</a>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
@@ -118,7 +119,7 @@
 
             function loadContext() {
                 try {
-                    const raw = sessionStorage.getItem('exploreContext');
+                    const raw = localStorage.getItem('exploreContext');
                     if (!raw) return null;
                     return JSON.parse(raw);
                 } catch (e) {
@@ -129,6 +130,8 @@
             function showNoContext() {
                 document.getElementById('noContext').classList.remove('hidden');
                 document.getElementById('exploreApp').classList.add('hidden');
+                var backLink = document.getElementById('backToGenerator');
+                if (backLink) backLink.href = window.location.origin + '/';
             }
 
             function showApp() {

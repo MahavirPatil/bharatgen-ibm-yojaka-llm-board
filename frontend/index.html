@@ -1137,11 +1137,12 @@
                 page: (q.source_meta && q.source_meta.page != null) ? q.source_meta.page : null
             };
             try {
-                sessionStorage.setItem('exploreContext', JSON.stringify(context));
+                localStorage.setItem('exploreContext', JSON.stringify(context));
             } catch (e) {
-                console.warn('sessionStorage failed', e);
+                console.warn('localStorage failed', e);
             }
-            window.open('explore.html', '_blank', 'noopener');
+            var exploreUrl = new URL('explore.html', window.location.href).href;
+            window.open(exploreUrl, '_blank', 'noopener');
         }
 
         function nextQ() { if(cursor < filteredQuestions.length - 1) { cursor++; renderQ(); } }

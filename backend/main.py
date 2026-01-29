@@ -366,6 +366,37 @@ def parse_ai_output(raw_text):
     if not questions:
         questions = re.findall(q_pattern2, raw_text, re.DOTALL)
         answers = re.findall(a_pattern2, raw_text, re.DOTALL)
+
+    # Fallback: markdown-style ### QUESTION / ### ANSWER or "Answer:" / "ANSWER"
+    if not questions:
+        md_answer = re.search(
+            r'(?i)(?:###\s*)?(?:ANSWER|Answer)\s*\n\s*(.*)',
+            raw_text,
+            re.DOTALL
+        )
+        md_question = re.search(
+            r'(?i)(?:###\s*)?(?:QUESTION|Question)\s*\n\s*(.*?)(?=(?:###\s*)?(?:ANSWER|Answer)\s*\n|\Z)',
+            raw_text,
+            re.DOTALL
+        )
+        if md_answer:
+            a_text = md_answer.group(1).strip()[:2000]
+            if md_question:
+                q_text = md_question.group(1).strip()
+            else:
+                before = raw_text[:md_answer.start()].strip()
+                q_text = before if len(before) < 2000 else before[:1997] + "..."
+            if not q_text:
+                q_text = "Question (format not parsed; see synthesis output)"
+            questions = [q_text]
+            answers = [a_text] if a_text else ["No answer provided."]
+        elif re.search(r'(?i)(?:###\s*)?(?:ANSWER|Answer)\s*', raw_text):
+            lines = raw_text.strip().split('\n')
+            for i, line in enumerate(lines):
+                if re.match(r'(?i)^(?:###\s*)?(?:ANSWER|Answer)\s*$', line.strip()) and i + 1 < len(lines):
+                    questions = ["Question (see synthesis output)"]
+                    answers = ['\n'.join(lines[i + 1:]).strip()[:2000]]
+                    break
     
     print(f"[DEBUG] parse_ai_output: Found {len(questions)} questions, {len(answers)} answers")
 
@@ -404,8 +435,17 @@ async def serve_explore():
     return FileResponse(BASE_DIR / "../frontend/explore.html")
 
 def _get_books_root():
-    """Books root for PDF serving; must match ingest BOOKS_ROOT (env BHARATGEN_BOOKS_PATH or project/data)."""
-    return Path(os.getenv("BHARATGEN_BOOKS_PATH", str(BASE_DIR.parent / "data"))).resolve()
+    """Books root for PDF serving; must match ingest BOOKS_ROOT.
+    Uses BHARATGEN_BOOKS_PATH if set; else project/books if it exists; else project/data.
+    """
+    env_path = os.getenv("BHARATGEN_BOOKS_PATH")
+    if env_path:
+        return Path(env_path).resolve()
+    project_root = BASE_DIR.parent
+    books_dir = project_root / "books"
+    if books_dir.is_dir():
+        return books_dir.resolve()
+    return (project_root / "data").resolve()
 
 
 @app.get("/api/pdf")
