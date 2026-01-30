@@ -188,9 +188,9 @@ import torch
 from model_runner import run_model, needs_rag, get_rag_context, initialize_clients
 from council import run_council_flow, is_param_orchestrator
 
-print(f"Is CUDA available? {torch.cuda.is_available()}")
-print(f"Current device: {torch.cuda.current_device()}")
-print(f"Device name: {torch.cuda.get_device_name(0)}")
+# print(f"Is CUDA available? {torch.cuda.is_available()}")
+# print(f"Current device: {torch.cuda.current_device()}")
+# print(f"Device name: {torch.cuda.get_device_name(0)}")
 
 load_dotenv()
 
