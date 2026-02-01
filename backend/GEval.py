@@ -137,18 +137,20 @@ Format exactly like this:
             if match:
                 extracted = match.group(1)
                 model_output=extracted
+            else:
+                model_output=model_output.replace("<OUTPUT>",'').replace('</OUTPUT>','')
+                extract = lambda s: {k: float(v) for k, v in re.findall(r'"(\d+)"\s*:\s*([0-9]*\.?[0-9]+)', s)}
+                model_output = extract(model_output)
         except:
-            model_output=model_output.replace("<OUTPUT>",'').replace('</OUTPUT>','')
-            extract = lambda s: {k: float(v) for k, v in re.findall(r'"(\d+)"\s*:\s*([0-9]*\.?[0-9]+)', s)}
-            model_output = extract(model_output)
+            model_output = model_output.strip()
 
         try:
             probs = json.loads(model_output)
         except:
             try:
                 probs = ast.literal_eval(model_output)
-            except:
-                print("FAILED PROBS : ",model_output)
+            except Exception as e:
+                print("FAILED PROBS : ",model_output,e)
                 return {1:1.0}
         return {int(k): float(v) for k, v in probs.items()}
 
