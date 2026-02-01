@@ -612,13 +612,12 @@ def get_alignment_score(req,q):
     )
 
     bloom_score = llama_bloom.evaluate(
-        task_description=f'''You are to evaluate the Bloom's taxonomy alignment of a question. 
-Remember : recall facts
-Understand : explain in your own words
-Apply : use in a practical example
-Analyze : break down and compare
-Evaluate : justify a judgment
-Create : design something new
+        task_description=f'''You are to evaluate the DoK level alignment of a question. 
+        You must adhere to the following definitions for the requested DEPTH:
+        - DOK 1 (Recall/Remember): Recall of a fact, term, or property. (e.g., Define, List, State)
+        - DOK 2 (Skills & Concepts/Understand & Apply): Use of information or conceptual knowledge. (e.g., Describe, Classify, Solve routine problems)
+        - DOK 3 (Strategic Thinking/Analyze & Evaluate): Reasoning, planning, and using evidence. (e.g., Explain why, Non-routine problem solving, Compare/Contrast phenomena)
+        - DOK 4 (Extended Thinking/Create): Complex synthesis and connection across chapters. (e.g., Create a model, Design an experiment, Critique a theoretical framework)
 
 The provided bloom level is {req.depth}.''',
         evaluation_parameter="You to rate how well it is aligned on a scale of 1 to 5. A score of 1 indicates low alignemtn while a score of 5 indicates high alignment.",
