@@ -255,7 +255,7 @@ except Exception as e:
     tokenizer_29 = None
     model_29 = None
 param_ncert = GEval(
-    model='bharatgenai/Param-1-2.9B-Instruct', 
+    model='http://localhost:8002/v1/chat/completions', 
     likert_scale=[1, 2, 3, 4, 5]  # or [1..7]
 )
 llama_bloom = GEval(
@@ -263,7 +263,7 @@ llama_bloom = GEval(
     likert_scale=[1, 2, 3, 4, 5]  # or [1..7]
 )
 guardrails_qwen = GEval(
-    model='http://localhost:8001/v1/chat/completions',  
+    model='http://localhost:8002/v1/chat/completions',  
     likert_scale=[1, 2]  # or [1..7]
 )
 verification_llama = GEval(
@@ -529,7 +529,7 @@ async def list_chapters(subject: str, language: str = "en"):
     manifest_path = (BASE_DIR.parent / "indexes" / language / "chapters_manifest.json").resolve()
     if not manifest_path.exists():
         return {"chapters": []}
-
+    print(manifest_path)
     try:
         data = json.loads(manifest_path.read_text(encoding="utf-8"))
         chapters = data.get(subject, [])
@@ -822,8 +822,10 @@ async def ask_llm(req: QueryRequest):
                 print(scores)
                 if(scores['guard']<=1.5 or scores['validity']<=1.5):
                     q['alignment_score']=0.1
+                    q['question']='Oops! We can\'t show this question. Try another one 😊'
+                    q['answer']='NA'
                 else:
-                    q['alignment_score']=round((scores['ncert']+scores['bloom'])/3,2)
+                    q['alignment_score']=round((scores['ncert']+scores['bloom'])/2,2)
                 if source_text_attach:
                     q["source_text"] = source_text_attach
                 if source_meta_attach:

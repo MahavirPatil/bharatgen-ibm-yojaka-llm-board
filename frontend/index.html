@@ -247,7 +247,21 @@
         }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-10 flex flex-col">
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['\\(', '\\)'], ['$', '$']],
+      displayMath: [['$$', '$$']]
+    },
+    svg: { fontCache: 'global' }
+  };
+</script>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"
+  async>
+</script>
+<body class="min-h-screen p-4 md:p-10 flex flex-col" script="">
 
     <header class="max-w-6xl mx-auto w-full flex justify-between items-center mb-8">
         <div>
@@ -388,24 +402,28 @@
             <div class="glass-panel p-6 rounded-3xl space-y-6">
                 <div class="grid grid-cols-2 gap-3">
                     <button 
+                        data-subject="Math"
                         onclick="setSubject('Math', this)" 
                         class="subj-btn border p-3 rounded-2xl text-xs font-bold tracking-widest transition-all btn-secondary"
                     >
                         MATH
                     </button>
                     <button 
+                        data-subject="Physics" 
                         onclick="setSubject('Physics', this)" 
                         class="subj-btn border p-3 rounded-2xl text-xs font-bold tracking-widest transition-all btn-secondary"
                     >
                         PHYSICS
                     </button>
                     <button 
+                        data-subject="Chemistry" 
                         onclick="setSubject('Chemistry', this)" 
                         class="subj-btn border p-3 rounded-2xl text-xs font-bold tracking-widest transition-all btn-secondary"
                     >
                         CHEMISTRY
                     </button>
                     <button 
+                        data-subject="Biology" 
                         onclick="setSubject('Biology', this)" 
                         class="subj-btn border p-3 rounded-2xl text-xs font-bold tracking-widest transition-all btn-secondary"
                     >
@@ -419,7 +437,7 @@
                         class="w-full rounded-2xl p-4 text-sm outline-none transition-all"
                     >
                         <option value="en">English</option>
-                        <option value="hi">Hindi</option>
+                        <option value="hi">हिंदी</option>
                     </select>
                     <select 
                         id="chapterDropdown" 
@@ -427,7 +445,7 @@
                     >
                         <option value="">Select Subject First</option>
                     </select>
-                    <select 
+                    <!-- <select 
                         id="themeDropdown" 
                         class="w-full rounded-2xl p-4 text-sm outline-none transition-all"
                     >
@@ -436,12 +454,12 @@
                         <option value="IPL">IPL</option>
                         <option value="football">football</option>
                         <option value="Interstellar movie">Interstellar movie</option>
-                    </select>
+                    </select> -->
                 </div>
 
                 <div class="space-y-3">
                     <p class="text-xs font-bold uppercase tracking-widest ml-2" style="color: var(--text-muted);">
-                        Complexity Level
+                        Difficulty Level
                     </p>
                     <div class="flex gap-2">
                         <button 
@@ -480,7 +498,7 @@
                 </div>
 
                 <div class="flex items-center justify-between px-2">
-                    <span class="text-xs font-bold tracking-wider" style="color: var(--text-secondary);">
+                    <span id="shuffleLabel" class="text-xs font-bold tracking-wider" style="color: var(--text-secondary);">
                         SHUFFLE ALL QUESTIONS
                     </span>
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -635,6 +653,54 @@
     </main>
 
     <script>
+    const uiTranslations = {
+        hi: {
+            subjects: {
+                Math: "गणित",
+                Physics: "भौतिकी",
+                Chemistry: "रसायन विज्ञान",
+                Biology: "जीवविज्ञान"
+            },
+            questionTypes: {
+                "Multiple Choice (MCQ)": "बहुविकल्पीय प्रश्न",
+                "Short Answer": "लघु उत्तरीय प्रश्न",
+                "True/False": "सही / गलत",
+                "Essay Prompt": "वर्णनात्मक प्रश्न",
+                "Case Study Analysis": "केस अध्ययन",
+                "Fill-in-the-Blanks": "रिक्त स्थान भरो"
+            },
+            misc: {
+                selectChapter: "अध्याय चुनें",
+                loadingChapters: "अध्याय लोड हो रहे हैं...",
+                selectSubjectFirst: "पहले विषय चुनें",
+                complexity: "जटिलता स्तर",
+                shuffleAll: "सभी प्रश्न मिलाएँ",
+                generateSession: "सत्र बनाएं",
+                generating: "सत्र बनाया जा रहा है..."
+            }
+        }
+    };
+
+        function updateShuffleLabel() {
+            const el = document.getElementById('shuffleLabel');
+            if (!el) return;
+
+            el.innerText =
+                activeLanguage === 'hi'
+                    ? uiTranslations.hi.misc.shuffleAll
+                    : 'SHUFFLE ALL QUESTIONS';
+        }
+        function updateSubjectButtons() {
+            document.querySelectorAll('.subj-btn').forEach(btn => {
+                const subject = btn.getAttribute('data-subject');
+
+                btn.innerText =
+                    activeLanguage === 'hi'
+                        ? uiTranslations.hi.subjects[subject]
+                        : subject.toUpperCase();
+            });
+        }
+
         // Theme Management
         function initTheme() {
             const savedTheme = localStorage.getItem('theme') || 'light';
@@ -661,62 +727,137 @@
         
         // Initialize theme on load
         initTheme();
-
         const chapterMap = {
-            "Math": [
-                "Sets", "Relations and Functions", "Trigonometric Functions", 
-                "Complex Numbers and Quadratic Equations", "Linear Inequalities", 
-                "Permutations and Combinations", "Binomial Theorem", 
-                "Sequences and Series", "Straight Lines", "Conic Sections", 
-                "Introduction to Three Dimensional Geometry", "Limits and Derivatives", 
-                "Statistics", "Probability", "Inverse Trigonometric Functions", 
-                "Matrices", "Determinants", "Continuity and Differentiability", 
-                "Application of Derivatives", "Integrals", "Application of Integrals", 
-                "Differential Equations", "Vector Algebra", "Three Dimensional Geometry", 
-                "Linear Programming"
-            ],
-            "Physics": [
-                "Units and Measurements", "Motion in a Straight Line", "Motion in a Plane", 
-                "Laws of Motion", "Work, Energy and Power", 
-                "System of Particles and Rotational Motion", "Gravitation", 
-                "Mechanical Properties of Solids", "Mechanical Properties of Fluids", 
-                "Thermal Properties of Matter", "Thermodynamics", "Kinetic Theory", 
-                "Oscillations", "Waves", "Electric Charges and Fields", 
-                "Electrostatic Potential and Capacitance", "Current Electricity", 
-                "Moving Charges and Magnetism", "Magnetism and Matter", 
-                "Electromagnetic Induction", "Alternating Current", "Electromagnetic Waves", 
-                "Ray Optics and Optical Instruments", "Wave Optics", 
-                "Dual Nature of Radiation and Matter", "Atoms", "Nuclei", 
-                "Semiconductor Electronics: Materials, Devices and Simple Circuits"
-            ],
-            "Chemistry": [
-                "Some Basic Concepts of Chemistry", "Structure of Atom", 
-                "Classification of Elements and Periodicity in Properties", 
-                "Chemical Bonding and Molecular Structure", "Thermodynamics", 
-                "Equilibrium", "Redox Reactions", 
-                "Organic Chemistry: Some Basic Principles and Techniques", "Hydrocarbons",
-                "Solutions", "Electrochemistry", "Chemical Kinetics", 
-                "The d- and f-Block Elements", "Coordination Compounds", 
-                "Haloalkanes and Haloarenes", "Alcohols, Phenols and Ethers", 
-                "Aldehydes, Ketones and Carboxylic Acids", "Amines", "Biomolecules"
-            ],
-            "Biology": [
-                "The Living World", "Biological Classification", "Plant Kingdom", 
-                "Animal Kingdom", "Morphology of Flowering Plants", 
-                "Anatomy of Flowering Plants", "Structural Organisation in Animals", 
-                "Cell: The Unit of Life", "Biomolecules", "Cell Cycle and Cell Division", 
-                "Photosynthesis in Higher Plants", "Respiration in Plants", 
-                "Plant Growth and Development", "Breathing and Exchange of Gases", 
-                "Body Fluids and Circulation", "Excretory Products and their Elimination", 
-                "Locomotion and Movement", "Neural Control and Coordination", 
-                "Chemical Coordination and Integration", "Sexual Reproduction in Flowering Plants", 
-                "Human Reproduction", "Reproductive Health", "Principles of Inheritance and Variation", 
-                "Molecular Basis of Inheritance", "Evolution", "Human Health and Disease", 
-                "Microbes in Human Welfare", "Biotechnology: Principles and Processes", 
-                "Biotechnology and its Applications", "Organisms and Populations", 
-                "Ecosystem", "Biodiversity and Conservation"
-            ]
+            en: {
+                Math: [
+                    "Sets",
+                    "Relations and Functions",
+                    "Trigonometric Functions",
+                    "Complex Numbers and Quadratic Equations",
+                    "Linear Inequalities",
+                    "Permutations and Combinations",
+                    "Binomial Theorem",
+                    "Sequences and Series",
+                    "Straight Lines",
+                    "Conic Sections",
+                    "Introduction to Three Dimensional Geometry",
+                    "Limits and Derivatives",
+                    "Statistics",
+                    "Probability"
+                ],
+                Physics: [
+                    "Units and Measurements",
+                    "Motion in a Straight Line",
+                    "Motion in a Plane",
+                    "Laws of Motion",
+                    "Work, Energy and Power"
+                ],
+                Chemistry: [
+                    "Some Basic Concepts of Chemistry",
+                    "Structure of Atom",
+                    "Classification of Elements and Periodicity in Properties"
+                ],
+                Biology: [
+                    "The Living World",
+                    "Biological Classification",
+                    "Plant Kingdom",
+                    "Animal Kingdom"
+                ]
+            },
+
+            hi: {
+                Math: [
+                    "समुच्चय",
+                    "संबंध एवं फलन",
+                    "त्रिकोणमितीय फलन",
+                    "सम्मिश्र संख्याएँ एवं द्विघात समीकरण",
+                    "रैखिक असमिकाएँ",
+                    "क्रमचय और संचय",
+                    "द्विपद प्रमेय",
+                    "अनुक्रम एवं श्रेणी",
+                    "सरल रेखाएँ",
+                    "शंकु परिच्छेद",
+                    "त्रिविमीय ज्यामिति का परिचय",
+                    "सीमाएँ एवं अवकलज",
+                    "सांख्यिकी",
+                    "प्रायिकता"
+                ],
+                Physics: [
+                    "मात्रक एवं मापन",
+                    "सरल रेखा में गति",
+                    "समतल में गति",
+                    "गति के नियम",
+                    "कार्य, ऊर्जा एवं शक्ति"
+                ],
+                Chemistry: [
+                    "रसायन विज्ञान की कुछ मूल अवधारणाएँ",
+                    "परमाणु की संरचना",
+                    "तत्वों का वर्गीकरण एवं गुणों में आवर्तिता"
+                ],
+                Biology: [
+                    "जीव जगत",
+                    "जैविक वर्गीकरण",
+                    "पादप जगत",
+                    "प्राणि जगत"
+                ]
+            }
         };
+
+        // const chapterMap = {
+        //     "Math": [
+        //         "Sets", "Relations and Functions", "Trigonometric Functions", 
+        //         "Complex Numbers and Quadratic Equations", "Linear Inequalities", 
+        //         "Permutations and Combinations", "Binomial Theorem", 
+        //         "Sequences and Series", "Straight Lines", "Conic Sections", 
+        //         "Introduction to Three Dimensional Geometry", "Limits and Derivatives", 
+        //         "Statistics", "Probability", "Inverse Trigonometric Functions", 
+        //         "Matrices", "Determinants", "Continuity and Differentiability", 
+        //         "Application of Derivatives", "Integrals", "Application of Integrals", 
+        //         "Differential Equations", "Vector Algebra", "Three Dimensional Geometry", 
+        //         "Linear Programming"
+        //     ],
+        //     "Physics": [
+        //         "Units and Measurements", "Motion in a Straight Line", "Motion in a Plane", 
+        //         "Laws of Motion", "Work, Energy and Power", 
+        //         "System of Particles and Rotational Motion", "Gravitation", 
+        //         "Mechanical Properties of Solids", "Mechanical Properties of Fluids", 
+        //         "Thermal Properties of Matter", "Thermodynamics", "Kinetic Theory", 
+        //         "Oscillations", "Waves", "Electric Charges and Fields", 
+        //         "Electrostatic Potential and Capacitance", "Current Electricity", 
+        //         "Moving Charges and Magnetism", "Magnetism and Matter", 
+        //         "Electromagnetic Induction", "Alternating Current", "Electromagnetic Waves", 
+        //         "Ray Optics and Optical Instruments", "Wave Optics", 
+        //         "Dual Nature of Radiation and Matter", "Atoms", "Nuclei", 
+        //         "Semiconductor Electronics: Materials, Devices and Simple Circuits"
+        //     ],
+        //     "Chemistry": [
+        //         "Some Basic Concepts of Chemistry", "Structure of Atom", 
+        //         "Classification of Elements and Periodicity in Properties", 
+        //         "Chemical Bonding and Molecular Structure", "Thermodynamics", 
+        //         "Equilibrium", "Redox Reactions", 
+        //         "Organic Chemistry: Some Basic Principles and Techniques", "Hydrocarbons",
+        //         "Solutions", "Electrochemistry", "Chemical Kinetics", 
+        //         "The d- and f-Block Elements", "Coordination Compounds", 
+        //         "Haloalkanes and Haloarenes", "Alcohols, Phenols and Ethers", 
+        //         "Aldehydes, Ketones and Carboxylic Acids", "Amines", "Biomolecules"
+        //     ],
+        //     "Biology": [
+        //         "The Living World", "Biological Classification", "Plant Kingdom", 
+        //         "Animal Kingdom", "Morphology of Flowering Plants", 
+        //         "Anatomy of Flowering Plants", "Structural Organisation in Animals", 
+        //         "Cell: The Unit of Life", "Biomolecules", "Cell Cycle and Cell Division", 
+        //         "Photosynthesis in Higher Plants", "Respiration in Plants", 
+        //         "Plant Growth and Development", "Breathing and Exchange of Gases", 
+        //         "Body Fluids and Circulation", "Excretory Products and their Elimination", 
+        //         "Locomotion and Movement", "Neural Control and Coordination", 
+        //         "Chemical Coordination and Integration", "Sexual Reproduction in Flowering Plants", 
+        //         "Human Reproduction", "Reproductive Health", "Principles of Inheritance and Variation", 
+        //         "Molecular Basis of Inheritance", "Evolution", "Human Health and Disease", 
+        //         "Microbes in Human Welfare", "Biotechnology: Principles and Processes", 
+        //         "Biotechnology and its Applications", "Organisms and Populations", 
+        //         "Ecosystem", "Biodiversity and Conservation"
+        //     ]
+        // };
 
         const availableTypes = [
             "Multiple Choice (MCQ)", "Short Answer", "True/False", 
@@ -805,7 +946,14 @@
                 }
             });
         }
-        
+        function updateStaticLabels() {
+                const el = document.getElementById('complexityLabel');
+                if (!el) return;
+                el.innerText =
+                    activeLanguage === 'hi'
+                        ? uiTranslations.hi.misc.complexity
+                        : 'Complexity Level';
+            }
         function updateChairmanLabel() {
             const chairmanId = document.getElementById('chairmanSelect').value;
             const chairmanName = availableModels.find(m => m.id === chairmanId)?.name || "Unknown";
@@ -818,22 +966,87 @@
         updateChairmanLabel();
         // Initialize language on page load
         document.getElementById('languageDropdown').value = activeLanguage;
+        // document.getElementById('languageDropdown').addEventListener('change', async function() {
+        //     activeLanguage = this.value;
+        //     localStorage.setItem('language', activeLanguage);
+        //     if (activeSubject) {
+        //         await loadChaptersForSubject(activeSubject);
+        //     }
+        // });
         document.getElementById('languageDropdown').addEventListener('change', async function() {
             activeLanguage = this.value;
             localStorage.setItem('language', activeLanguage);
+
+            updateSubjectButtons();
+            renderQuestionTypes();
+            updateStaticLabels();
+            updateShuffleLabel();
+            updateGenerateButton();
             if (activeSubject) {
                 await loadChaptersForSubject(activeSubject);
             }
         });
+        function updateGenerateButton(loading = false) {
+            const btn = document.getElementById('genBtn');
+            if (!btn) return;
+
+            if (loading) {
+                btn.innerHTML =
+                    activeLanguage === 'hi'
+                        ? `<i class="fa-solid fa-circle-notch fa-spin"></i> ${uiTranslations.hi.misc.generating}`
+                        : `<i class="fa-solid fa-circle-notch fa-spin"></i> GENERATING...`;
+            } else {
+                btn.innerText =
+                    activeLanguage === 'hi'
+                        ? uiTranslations.hi.misc.generateSession
+                        : 'GENERATE SESSION';
+            }
+        }
+        function renderQuestionTypes() {
+            typeContainer.innerHTML = '';
+            availableTypes.forEach(type => {
+                const label =
+                    activeLanguage === 'hi'
+                        ? uiTranslations.hi.questionTypes[type] || type
+                        : type;
+
+                const div = document.createElement('div');
+                div.className = "type-input flex justify-between items-center p-3 rounded-2xl";
+                div.innerHTML = `
+                    <span class="text-xs font-bold uppercase tracking-tight">${label}</span>
+                    <input type="number"
+                        data-type="${type}"
+                        value="0"
+                        min="0"
+                        class="q-type-count w-14 bg-transparent text-center font-bold outline-none">
+                `;
+                typeContainer.appendChild(div);
+            });
+        }
 
         async function loadChaptersForSubject(subject) {
             const dropdown = document.getElementById('chapterDropdown');
-            dropdown.innerHTML = '<option value="">Loading chapters...</option>';
+            // dropdown.innerHTML = '<option value="">Loading chapters...</option>';
+            dropdown.innerHTML = `
+                <option value="">
+                    ${activeLanguage === 'hi'
+                        ? uiTranslations.hi.misc.loadingChapters
+                        : 'Loading chapters...'}
+                </option>
+            `;
             try {
                 const res = await fetch(`/chapters?subject=${encodeURIComponent(subject)}&language=${encodeURIComponent(activeLanguage)}`);
+                conosle.log(res)
                 const data = await res.json();
                 const chapters = (data && Array.isArray(data.chapters)) ? data.chapters : [];
-                dropdown.innerHTML = '<option value="">Select Chapter</option>';
+                // dropdown.innerHTML = '<option value="">Select Chapter</option>';
+                dropdown.innerHTML = `
+                    <option value="">
+                        ${activeLanguage === 'hi'
+                            ? uiTranslations.hi.misc.selectChapter
+                            : 'Select Chapter'}
+                    </option>
+                `;
                 if (chapters.length > 0) {
                     chapters.forEach(chapter => {
                         const opt = document.createElement('option');
@@ -847,9 +1060,26 @@
                 // fall through to local fallback
             }
             // Fallback to local chapterMap (English) if API unavailable/empty
-            dropdown.innerHTML = '<option value="">Select Chapter</option>';
-            if (chapterMap[subject]) {
-                chapterMap[subject].forEach(chapter => {
+            // dropdown.innerHTML = '<option value="">Select Chapter</option>';
+            dropdown.innerHTML = `
+                <option value="">
+                    ${activeLanguage === 'hi'
+                        ? uiTranslations.hi.misc.selectChapter
+                        : 'Select Chapter'}
+                </option>
+            `;
+            // if (chapterMap[subject]) {
+            //     chapterMap[subject].forEach(chapter => {
+            //         const opt = document.createElement('option');
+            //         opt.value = chapter;
+            //         opt.innerText = chapter;
+            //         dropdown.appendChild(opt);
+            //     });
+            // }
+            const langMap = chapterMap[activeLanguage] || chapterMap.en;
+
+            if (langMap[subject]) {
+                langMap[subject].forEach(chapter => {
                     const opt = document.createElement('option');
                     opt.value = chapter;
                     opt.innerText = chapter;
@@ -917,7 +1147,9 @@
 
         async function startSession() {
             const btn = document.getElementById('genBtn');
-            const theme = document.getElementById('themeDropdown').value;
+            // const theme = document.getElementById('themeDropdown').value;
+            const themeEl = document.getElementById('themeDropdown');
+            const theme = themeEl ? themeEl.value : "general";
             const chapter = document.getElementById('chapterDropdown').value;
             const shuffle = document.getElementById('shuffleToggle').checked;
 
@@ -938,11 +1170,16 @@
             btn.disabled = true;
 
             // Prepare the sidebar content
+            // document.getElementById('sidebarContent').innerHTML = `
+            //     <p class='mb-2 font-bold' style="color: var(--text-primary);">Theme: ${theme}</p>
+            //     <p style="color: var(--text-secondary);">Retrieving reference chunks (${activeLanguage}) for NCERT ${activeSubject} Chapter: ${chapter}...</p>
+            //     <p class='mt-4 text-xs opacity-70' style="color: var(--text-muted);">When questions are ready, expand <strong>Source text</strong> to see the extracted chunk and use <strong>Explore in PDF</strong> to view the source page and chat.</p>
+            // `;
             document.getElementById('sidebarContent').innerHTML = `
-                <p class='mb-2 font-bold' style="color: var(--text-primary);">Theme: ${theme}</p>
-                <p style="color: var(--text-secondary);">Retrieving reference chunks (${activeLanguage}) for NCERT ${activeSubject} Chapter: ${chapter}...</p>
-                <p class='mt-4 text-xs opacity-70' style="color: var(--text-muted);">When questions are ready, expand <strong>Source text</strong> to see the extracted chunk and use <strong>Explore in PDF</strong> to view the source page and chat.</p>
+                ${theme && theme !== "general" ? `<p class='mb-2 font-bold'>Theme: ${theme}</p>` : ''}
+                <p>Retrieving reference chunks (${activeLanguage}) for NCERT ${activeSubject} Chapter: ${chapter}...</p>
             `;
+
             document.getElementById('sidebarToggleBtn').classList.remove('hidden');
             document.getElementById('sidebarToggleBtn').classList.add('flex');
 
@@ -1030,8 +1267,8 @@
             if(filteredQuestions.length === 0) return;
             const q = filteredQuestions[cursor];
             document.getElementById('qTypeLabel').innerText = q.category || "General Question";
-            document.getElementById('qContent').innerText = q.question;
-            document.getElementById('aContent').innerText = q.answer;
+            document.getElementById('qContent').innerHTML = q.question;
+            document.getElementById('aContent').innerHTML = q.answer;
             document.getElementById('aContent').classList.add('hidden');
             document.getElementById('progressBar').innerText = `PROGRESS: ${cursor + 1} OF ${filteredQuestions.length}`;
             document.getElementById('revealBtn').innerText = "REVEAL STUDY LOGIC";
@@ -1058,7 +1295,7 @@
                 sourceTextSection.classList.add('hidden');
                 exploreBtn.classList.add('hidden');
             }
-            
+            renderMath();
             // Render board opinions if available
             if (q.board_metadata) {
                 renderBoardOpinions(q.board_metadata);
@@ -1084,7 +1321,7 @@
         function renderAlignmentScore(q) {
             const container = document.getElementById('ascoreContent');
 
-            container.innerHTML = '<div class="text-xs font-bold uppercase tracking-widest">Alignment Score</div>';
+            container.innerHTML = '<div class="text-xs font-bold uppercase tracking-widest">Confidence Score</div>';
             console.log(q)
             if (!q.alignment_score) {
                 container.innerHTML += `
@@ -1172,7 +1409,11 @@
                 });
             }
         }
-        
+        function renderMath() {
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+        }
         function toggleBoardOpinions() {
             const content = document.getElementById('boardOpinionsContent');
             const icon = document.getElementById('boardOpinionsIcon');
