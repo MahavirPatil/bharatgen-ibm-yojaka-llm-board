@@ -1,4 +1,4 @@
-import json,random
+import json,random,ast
 from typing import Dict, List
 from groq import Groq
 from urllib.parse import urlparse
@@ -145,10 +145,10 @@ Format exactly like this:
             model_output = model_output.strip()
 
         try:
-            probs = json.loads(model_output)
+            probs = json.loads(model_output.strip())
         except:
             try:
-                probs = ast.literal_eval(model_output)
+                probs = ast.literal_eval(model_output.strip())
             except Exception as e:
                 print("FAILED PROBS : ",model_output,e)
                 return {1:1.0}

@@ -702,7 +702,7 @@ async def ask_llm(req: QueryRequest):
                     q["source_meta"] = {"pdf_path": source_meta.get("source_path"), "page": source_meta.get("page")}
 
                 scores=get_alignment_score(req,q)
-                if(scores['guard']<=1.5 or scores['validity']<=1.5):
+                if(scores['guard']<1.5 or scores['validity']<1.5):
                     q['alignment_score']=0.0
                 else:
                     q['alignment_score']=round((scores['ncert']+scores['bloom'])/3,2)
