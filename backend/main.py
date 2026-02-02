@@ -584,11 +584,13 @@ async def ask_llm(req: QueryRequest):
         if req.board:
             # Validate board configuration
             if req.board.chairman_model_id in req.board.member_model_ids:
+                print("[ /ask ] 400: Chairman model cannot be in member list")
                 raise HTTPException(
-                    status_code=400, 
+                    status_code=400,
                     detail="Chairman model cannot be in member list"
                 )
             if len(req.board.member_model_ids) == 0:
+                print("[ /ask ] 400: At least one board member is required")
                 raise HTTPException(
                     status_code=400,
                     detail="At least one board member is required"
@@ -756,6 +758,7 @@ async def ask_llm(req: QueryRequest):
                     q["source_meta"] = source_meta_attach
             return questions
         else:
+            print("[ /ask ] 400: Either 'board' or 'model_id' must be provided")
             raise HTTPException(
                 status_code=400,
                 detail="Either 'board' configuration or 'model_id' must be provided"
