@@ -183,7 +183,52 @@ from model_runner import run_model, needs_rag, get_rag_context
 from council import run_council_flow
 
 load_dotenv()
-app = FastAPI()
+
+# FastAPI app with Swagger documentation
+app = FastAPI(
+    title="BharatGen LLM Board API",
+    description="""
+## BharatGen IBM Yojaka LLM Board API
+
+This API provides endpoints for:
+- **Question Generation**: Generate academic assessment questions using various LLM models
+- **Council Flow**: Multi-model orchestration for improved question quality
+- **RAG Pipeline**: NCERT-based Retrieval Augmented Generation
+- **Chapter Management**: List available chapters by subject and language
+
+### Available Models
+- Gemini
+- OpenAI GPT
+- Groq
+- Local Llama
+- Param-1 (1.7B & 2.9B variants)
+- Qwen
+
+### Swagger UI
+Access this documentation at `/docs` or ReDoc at `/redoc`
+    """,
+    version="1.0.0",
+    contact={
+        "name": "BharatGen Team",
+    },
+    license_info={
+        "name": "MIT",
+    },
+    openapi_tags=[
+        {
+            "name": "Question Generation",
+            "description": "Endpoints for generating academic questions using LLMs"
+        },
+        {
+            "name": "Chapters",
+            "description": "Endpoints for managing chapters and subjects"
+        },
+        {
+            "name": "Testing",
+            "description": "Endpoints for testing model connectivity"
+        }
+    ]
+)
 BASE_DIR = Path(__file__).resolve().parent
 
 # Initialize Groq client only
@@ -460,8 +505,14 @@ async def explore_chat(body: ExploreChatRequest):
 @app.get("/chapters")
 async def list_chapters(subject: str, language: str = "en"):
     """
-    Return chapter names for a subject and language based on:
-      indexes/<language>/chapters_manifest.json
+    Return chapter names for a subject and language.
+    
+    Reads from indexes/<language>/chapters_manifest.json
+    
+    - **subject**: The subject name (e.g., 'Science', 'Mathematics')
+    - **language**: Language code - 'en' for English, 'hi' for Hindi (default: 'en')
+    
+    Returns a list of chapter names for the given subject.
     """
     language = (language or "en").lower()
     if language not in ("en", "hi"):
@@ -536,8 +587,25 @@ The provided bloom level is {req.depth}.''',
 @app.post("/ask")
 async def ask_llm(req: QueryRequest):
     """
-    Question generation endpoint with LLM Board support.
-    If board config is provided, uses council flow. Otherwise falls back to single model.
+    Generate academic assessment questions using LLM models.
+    
+    This endpoint supports two modes:
+    
+    1. **Single Model Mode**: Uses one LLM to generate questions
+    2. **Board/Council Mode**: Multiple LLMs collaborate to produce higher quality questions
+    
+    ## Request Parameters
+    - **model_id**: The LLM model to use (e.g., 'gemini', 'gpt-4', 'param-1-2.9b-instruct')
+    - **subject**: Subject area (e.g., 'Science', 'Mathematics')
+    - **chapter**: Chapter name from the subject
+    - **topic**: Specific topic within the chapter
+    - **qType**: Question type (e.g., 'MCQ', 'Short Answer', 'Long Answer')
+    - **depth**: Cognitive depth level ('Low', 'Medium', 'High')
+    - **language**: Language for question generation ('en' or 'hi')
+    - **board**: Optional board configuration for council flow
+    
+    ## Response
+    Returns generated question(s) with answers in structured format.
     """
     print(req)
     try:

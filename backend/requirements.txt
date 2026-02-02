@@ -18,12 +18,10 @@ bitsandbytes
 sentence-transformers
 
 # --- RAG & Data Ingestion ---
-langchain
-langchain-community
-langchain-huggingface
+
 pypdf
 faiss-cpu
-pickle5  # Useful for older python versions, otherwise standard pickle works
+
 
 # --- Utilities ---
 pathlib

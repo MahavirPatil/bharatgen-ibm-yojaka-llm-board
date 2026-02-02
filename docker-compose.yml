@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8005:8005"
+    env_file:
+      - .env
+    environment:
+      - FRONTEND_RELATIVE_PATH=/frontend/index.html
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro

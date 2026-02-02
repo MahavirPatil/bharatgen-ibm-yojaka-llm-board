@@ -13,8 +13,9 @@ BharatGen is an interactive study tool that generates NCERT/CBSE-aligned questio
 ## Project Structure
 
 ```
-bharatgen-ibm-yojaka-llmquestion-board/
+bharatgen-ibm-yojaka-llm-board/
 ├── backend/
+│   ├── Dockerfile          # Backend container definition
 │   ├── app.py              # FastAPI app entry point (debug mode)
 │   ├── main.py             # FastAPI routes and LLM integration
 │   ├── requirements.txt    # Python dependencies
@@ -22,12 +23,14 @@ bharatgen-ibm-yojaka-llmquestion-board/
 │       ├── main.py         # RAG retriever
 │       └── ingest.py       # PDF ingestion script
 ├── frontend/
-│   └── index.html         # Single-page UI
+│   └── index.html          # Single-page UI
+├── docker-compose.yml      # Multi-container orchestration
+├── .env                    # Environment variables (gitignored)
 ├── data/                   # NCERT PDFs (gitignored)
-├── indexes/               # Vector indexes (gitignored)
+├── indexes/                # Vector indexes (gitignored)
 │   ├── vector_db.index
 │   └── chunks_metadata.pkl
-└── vector_store/          # Vector store (gitignored)
+└── vector_store/           # Vector store (gitignored)
 ```
 
 ## Prerequisites
@@ -65,6 +68,17 @@ PARAM1_7B_MOE_PATH=/home/jashwanth/Param-1-7B-MoE
 ```
 
 ## Running the Application
+
+### Option 1: Docker (Recommended)
+
+```bash
+docker compose up --build
+```
+
+- Backend available at `http://localhost:8005/`
+- Frontend served at `http://localhost:8080/`
+
+### Option 2: Local Development
 
 Start the backend in debug mode:
 
@@ -120,6 +134,17 @@ This will:
 4. Set cognitive depth level (DOK 1-4)
 5. Configure question distribution by type
 6. Click "GENERATE SESSION" to create questions
+
+## API Documentation
+
+Once the application is running, access the interactive API docs:
+
+| Endpoint | Description |
+|----------|-------------|
+| `/docs`  | Swagger UI - Interactive API explorer |
+| `/redoc` | ReDoc - Alternative API documentation |
+
+
 
 ## License
 
