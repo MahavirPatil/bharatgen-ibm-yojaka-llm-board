@@ -837,21 +837,21 @@ def viewer():
 
 
 def detect_language(text: str) -> str:
-    text = text.lower()
+    # Unicode range for Devanagari
+    devanagari_pattern = re.compile(r'[\u0900-\u097F]')
+    english_pattern = re.compile(r'[A-Za-z]')
 
-    # 1. Check for Devanagari (Hindi script)
-    if re.search(r'[\u0900-\u097F]', text):
-        return 'hien'
+    has_devanagari = bool(devanagari_pattern.search(text))
+    has_english = bool(english_pattern.search(text))
 
-    # 2. Check for Hinglish (Latin letters + Hindi words)
-    words = re.findall(r"[a-zA-Z]+", text)
-    hinglish_hits = sum(1 for w in words if w in HINGLISH_WORDS)
-
-    if hinglish_hits >= 1:
-        return 1 # "Hinglish"
-
-    # 3. Default to English
-    return 'en'
+    if has_english and has_devanagari:
+        return "hien"
+    elif has_devanagari:
+        return "hi"
+    elif has_english:
+        return "en"
+    else:
+        return "unknown"
 
 def get_alignment_score(req,q):
     print("===============Generating Scores============")
