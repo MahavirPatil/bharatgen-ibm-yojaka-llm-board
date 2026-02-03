@@ -1,7 +1,9 @@
+from sqlalchemy import Column, String, Float, DateTime, Text, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from datetime import datetime
 import uuid
-from sqlalchemy import create_engine, Column, String, Float, Integer, Text
-from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy.types import JSON
+import json
 
 DATABASE_URL = "sqlite:///./questions.db"
 
@@ -20,67 +22,39 @@ class QuestionDB(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
 
-    # Request fields
-    model_id = Column(String)
-    language = Column(String)
-    depth = Column(String)
-    subject = Column(String)
-    chapter = Column(String)
-    theme = Column(String)
-    qtype = Column(String)
-    num_questions = Column(Integer)
-
-    # Core QA
     question = Column(Text)
     answer = Column(Text)
 
-    # Scores
     alignment_score = Column(Float)
-    bloom = Column(Float)
-    ncert = Column(Float)
-    guard = Column(Float)
-    validity = Column(Float)
 
-    # RAG
-    source_text = Column(JSON)
-    source_meta = Column(JSON)
+    # searchable field
+    model_id = Column(String)
 
+    # full blobs
+    req_json = Column(Text)
+    scores_json = Column(Text)
 
-# Create tables automatically
-Base.metadata.create_all(bind=engine)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 def save_question(req, q, scores, alignment):
-    """
-    Save a single generated question to SQLite.
-    """
 
     db = SessionLocal()
 
     row = QuestionDB(
-        model_id=req.model_id,
-        language=req.language,
-        depth=req.depth,
-        subject=req.subject,
-        chapter=req.chapter,
-        theme=req.theme,
-        qtype=req.qType,
-        num_questions=req.num_questions,
-
-        question=q["question"],
-        answer=q["answer"],
-
+        question=q.get("question"),
+        answer=q.get("answer"),
         alignment_score=alignment,
+        model_id=req.model_id,
 
-        bloom=scores["bloom"],
-        ncert=scores["ncert"],
-        guard=scores["guard"],
-        validity=scores["validity"],
-
-        source_text=q.get("source_text"),
-        source_meta=q.get("source_meta")
+        req_json=json.dumps(req.dict()),
+        scores_json=json.dumps(scores),
     )
 
     db.add(row)
     db.commit()
     db.close()
+
+
+# Create tables
+Base.metadata.create_all(bind=engine)

@@ -554,13 +554,20 @@ async def health_check():
 @app.get("/api/questions")
 def viewer_questions(offset: int = 0, limit: int = 25):
     db = SessionLocal()
-    rows = db.query(QuestionDB).order_by(QuestionDB.id.desc()).offset(offset).limit(limit).all()
+
+    rows = db.query(QuestionDB)\
+        .order_by(QuestionDB.created_at.desc())\
+        .offset(offset)\
+        .limit(limit)\
+        .all()
+
     db.close()
 
     return [{
         "id": r.id,
         "question": r.question or "",
         "alignment_score": r.alignment_score or 0,
+        "model_id": r.model_id
     } for r in rows]
 
 
@@ -578,13 +585,9 @@ def viewer_single(qid: str):
         "question": q.question,
         "answer": q.answer,
         "alignment_score": q.alignment_score,
-        "subject": q.subject,
-        "chapter": q.chapter,
         "model_id": q.model_id,
-        "bloom": q.bloom,
-        "ncert": q.ncert,
-        "guard": q.guard,
-        "validity": q.validity,
+        "req": json.loads(q.req_json),
+        "scores": json.loads(q.scores_json)
     }
 
 
@@ -656,9 +659,11 @@ def viewer():
 
             .modal-content{
             background:white;
-            margin:8% auto;
+            margin:5% auto;
             padding:25px;
             width:60%;
+            max-height:80vh;
+            overflow-y:auto;
             border-radius:10px
             }
 
@@ -720,6 +725,30 @@ def viewer():
             const modal=document.getElementById("modal");
             const modalBody=document.getElementById("modalBody");
 
+            function prettyKey(k){
+                return k.replace(/_/g," ")
+                        .replace(/\b\w/g,c=>c.toUpperCase());
+                }
+
+                function renderTable(obj){
+                    let html = "<table style='width:100%;margin-top:8px'>";
+
+                    for(const k in obj){
+                        const v = obj[k];
+                        if(v !== null && v !== undefined){
+                        html += `
+                            <tr>
+                            <td style="padding:6px 0;color:#475569;width:35%">${prettyKey(k)}</td>
+                            <td style="padding:6px 0;font-weight:500">${v}</td>
+                            </tr>
+                        `;
+                        }
+                    }
+
+                    html += "</table>";
+                    return html;
+               }
+
             function load(){
             fetch(`/api/questions?offset=${offset}&limit=${limit}`)
             .then(r=>r.json())
@@ -755,7 +784,7 @@ def viewer():
             .then(q=>{
             const pct=Math.round((q.alignment_score/5)*100);
 
-            modalBody.innerHTML=`
+            modalBody.innerHTML = `
             <h3>${q.question}</h3>
 
             <p><i>${q.answer}</i></p>
@@ -767,14 +796,14 @@ def viewer():
             <button onclick="toggle()">Show Metadata</button>
 
             <div class="meta" id="meta">
-                <hr>
-                Subject: ${q.subject}<br>
-                Chapter: ${q.chapter}<br>
-                Model: ${q.model_id}<br><br>
-                Bloom: ${q.bloom}<br>
-                NCERT: ${q.ncert}<br>
-                Guard: ${q.guard}<br>
-                Validity: ${q.validity}
+            <hr>
+
+            <h4>Request</h4>
+            ${renderTable(q.req)}
+
+            <h4 style="margin-top:15px">Scores</h4>
+            ${renderTable(q.scores)}
+
             </div>
             `;
 
