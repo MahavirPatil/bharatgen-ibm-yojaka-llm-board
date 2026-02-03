@@ -181,7 +181,10 @@ import ncert_rag_pipe.main as ncert_rag
 from typing import List, Optional
 from model_runner import run_model, needs_rag, get_rag_context
 from council import run_council_flow
-from db import save_question
+from db import save_question, QuestionDB
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from fastapi.responses import HTMLResponse
 
 load_dotenv()
 
@@ -231,6 +234,14 @@ Access this documentation at `/docs` or ReDoc at `/redoc`
     ]
 )
 BASE_DIR = Path(__file__).resolve().parent
+DATABASE_URL = "sqlite:///./questions.db"
+
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False}
+)
+
+SessionLocal = sessionmaker(bind=engine)
 
 # Initialize Groq client only
 groq_api_key = os.getenv("GROQ_API_KEY")
@@ -539,6 +550,262 @@ async def health_check():
     Health check endpoint. Returns ok if Groq client is initialized.
     """
     return {"ok": groq_client is not None, "message": "Groq-only mode"}
+
+@app.get("/api/questions")
+def viewer_questions(offset: int = 0, limit: int = 25):
+    db = SessionLocal()
+    rows = db.query(QuestionDB).order_by(QuestionDB.id.desc()).offset(offset).limit(limit).all()
+    db.close()
+
+    return [{
+        "id": r.id,
+        "question": r.question or "",
+        "alignment_score": r.alignment_score or 0,
+    } for r in rows]
+
+
+@app.get("/api/question/{qid}")
+def viewer_single(qid: str):
+    db = SessionLocal()
+    q = db.query(QuestionDB).filter(QuestionDB.id == qid).first()
+    db.close()
+
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    return {
+        "id": q.id,
+        "question": q.question,
+        "answer": q.answer,
+        "alignment_score": q.alignment_score,
+        "subject": q.subject,
+        "chapter": q.chapter,
+        "model_id": q.model_id,
+        "bloom": q.bloom,
+        "ncert": q.ncert,
+        "guard": q.guard,
+        "validity": q.validity,
+    }
+
+
+
+@app.get("/viewq", response_class=HTMLResponse)
+def viewer():
+    return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <title>Questions Dashboard</title>
+
+            <style>
+            body{
+            background:#f8fafc;
+            font-family:Arial;
+            padding:40px
+            }
+
+            .card{
+            background:white;
+            padding:25px;
+            border-radius:12px;
+            box-shadow:0 10px 25px rgba(0,0,0,.05)
+            }
+
+            table{
+            width:100%;
+            border-collapse:collapse
+            }
+
+            th,td{
+            padding:12px;
+            text-align:left;
+            border-bottom:1px solid #e5e7eb
+            }
+
+            th{color:#64748b;font-size:13px}
+
+            button{
+            background:#2563eb;
+            color:white;
+            border:none;
+            padding:6px 12px;
+            border-radius:6px;
+            cursor:pointer
+            }
+
+            button:disabled{
+            opacity:.4
+            }
+
+            #loadbtn{
+            margin-top:15px
+            }
+
+            #status{
+            margin-top:10px;
+            color:#64748b
+            }
+
+            .modal{
+            display:none;
+            position:fixed;
+            top:0;left:0;
+            width:100%;height:100%;
+            background:rgba(0,0,0,.4)
+            }
+
+            .modal-content{
+            background:white;
+            margin:8% auto;
+            padding:25px;
+            width:60%;
+            border-radius:10px
+            }
+
+            .close{
+            float:right;
+            cursor:pointer;
+            font-size:20px
+            }
+
+            .meta{
+            display:none;
+            color:#475569;
+            margin-top:10px
+            }
+
+            </style>
+            </head>
+
+            <body>
+
+            <div class="card">
+
+            <h2>Questions</h2>
+
+            <table>
+            <thead>
+            <tr>
+            <th>Q.No</th>
+            <th>Question Preview</th>
+            <th>Alignment</th>
+            <th>Action</th>
+            </tr>
+            </thead>
+
+            <tbody id="rows"></tbody>
+            </table>
+
+            <button id="loadbtn" onclick="load()">Load more</button>
+            <div id="status"></div>
+
+            </div>
+
+            <div class="modal" id="modal">
+            <div class="modal-content">
+            <span class="close" onclick="closeModal()">×</span>
+            <div id="modalBody"></div>
+            </div>
+            </div>
+
+            <script>
+
+            let offset=0;
+            const limit=25;
+            let qcounter=1;
+
+            const rows=document.getElementById("rows");
+            const status=document.getElementById("status");
+            const loadbtn=document.getElementById("loadbtn");
+            const modal=document.getElementById("modal");
+            const modalBody=document.getElementById("modalBody");
+
+            function load(){
+            fetch(`/api/questions?offset=${offset}&limit=${limit}`)
+            .then(r=>r.json())
+            .then(data=>{
+            if(data.length===0){
+                status.textContent="All questions loaded.";
+                loadbtn.disabled=true;
+                return;
+            }
+
+            data.forEach(q=>{
+                const tr=document.createElement("tr");
+
+                const preview=q.question.substring(0,40)+"...";
+
+                tr.innerHTML=`
+                <td>${qcounter++}</td>
+                <td>${preview}</td>
+                <td>${q.alignment_score}</td>
+                <td><button onclick="openModal('${q.id}')">View Details</button></td>
+                `;
+
+                rows.appendChild(tr);
+            });
+
+            offset+=limit;
+            });
+            }
+
+            function openModal(id){
+            fetch("/api/question/"+id)
+            .then(r=>r.json())
+            .then(q=>{
+            const pct=Math.round((q.alignment_score/5)*100);
+
+            modalBody.innerHTML=`
+            <h3>${q.question}</h3>
+
+            <p><i>${q.answer}</i></p>
+
+            Alignment: ${q.alignment_score}/5 (${pct}%)
+
+            <br><br>
+
+            <button onclick="toggle()">Show Metadata</button>
+
+            <div class="meta" id="meta">
+                <hr>
+                Subject: ${q.subject}<br>
+                Chapter: ${q.chapter}<br>
+                Model: ${q.model_id}<br><br>
+                Bloom: ${q.bloom}<br>
+                NCERT: ${q.ncert}<br>
+                Guard: ${q.guard}<br>
+                Validity: ${q.validity}
+            </div>
+            `;
+
+            modal.style.display="block";
+            });
+            }
+
+            function toggle(){
+            const meta=document.getElementById("meta");
+            meta.style.display=meta.style.display==="none"?"block":"none";
+            }
+
+            function closeModal(){
+            modal.style.display="none";
+            }
+
+            window.onclick=function(e){
+            if(e.target==modal) closeModal();
+            }
+
+            load();
+
+            </script>
+
+            </body>
+            </html>
+            """
+
+
+
+
 
 def get_alignment_score(req,q):
     print("===============Generating Scores============")
