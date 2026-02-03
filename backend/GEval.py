@@ -146,6 +146,8 @@ Format exactly like this:
             model_output = model_output.strip()
         if(type(model_output)==str):
             model_output=model_output.strip()
+        elif(type(model_output)==dict):
+            return model_output
         print(f"Model output : \"{model_output}\"")
         try:
             probs = json.loads(model_output)
