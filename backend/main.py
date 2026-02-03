@@ -181,6 +181,7 @@ import ncert_rag_pipe.main as ncert_rag
 from typing import List, Optional
 from model_runner import run_model, needs_rag, get_rag_context
 from council import run_council_flow
+from db import save_question
 
 load_dotenv()
 
@@ -784,14 +785,16 @@ async def ask_llm(req: QueryRequest):
                 print(scores)
                 if(scores['guard']<=1.5 or scores['validity']<=1.5):
                     q['alignment_score']=0.1
-                    q['question']='Oops! We can\'t show this question. Try another one 😊'
-                    q['answer']='NA'
                 else:
                     q['alignment_score']=round((scores['ncert']+scores['bloom'])/2,2)
                 if source_text_attach:
                     q["source_text"] = source_text_attach
                 if source_meta_attach:
                     q["source_meta"] = source_meta_attach
+                save_question(req, q, scores, q.get("alignment_score"))
+                if(scores['guard']<=1.5 or scores['validity']<=1.5):
+                    q['question']='Oops! We can\'t show this question. Try another one 😊'
+                    q['answer']='NA'
             print(questions)
             return questions
         else:
