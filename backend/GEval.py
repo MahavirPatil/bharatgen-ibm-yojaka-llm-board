@@ -9,7 +9,7 @@ groq_id_model_mapping = {
     "groq-llama-70b": "llama-3.3-70b-versatile",
     "rag-piped-groq-70b": "llama-3.3-70b-versatile",
     "groq-llama-guard": "meta-llama/llama-guard-4-12b",
-
+    'groq-qwen-32b':'qwen/qwen3-32b',
     # Groq – GPT OSS
     "groq-gpt-oss-120b": "openai/gpt-oss-120b",
     "groq-gpt-oss-20b": "openai/gpt-oss-20b",
@@ -41,6 +41,7 @@ class GEval:
         elif('groq' in model):
             self._call_model=self._call_groq
             self.model = groq_id_model_mapping[model]
+            print(self.model)
         else:
             self._call_model=self._call_hf
             self.tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=False)
@@ -143,12 +144,15 @@ Format exactly like this:
                 model_output = extract(model_output)
         except:
             model_output = model_output.strip()
-
+        if(type(model_output)==str):
+            model_output=model_output.strip()
+        print(f"Model output : \"{model_output}\"")
         try:
-            probs = json.loads(model_output.strip())
-        except:
+            probs = json.loads(model_output)
+        except Exception as e:
+            print("Json load failed : ",e)
             try:
-                probs = ast.literal_eval(model_output.strip())
+                probs = ast.literal_eval(model_output)
             except Exception as e:
                 print("FAILED PROBS : ",model_output,e)
                 return {1:1.0}
@@ -193,6 +197,7 @@ Format exactly like this:
         pass 
 
     def _call_groq(self, prompt: str) -> str:
+        print("Here ",self.model)
         completion = self.client.chat.completions.create(
             model=self.model,
             messages=[

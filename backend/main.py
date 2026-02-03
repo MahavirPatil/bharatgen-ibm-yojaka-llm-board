@@ -807,20 +807,54 @@ def viewer():
 
 
 
+def detect_language(text: str) -> str:
+    text = text.lower()
+
+    # 1. Check for Devanagari (Hindi script)
+    if re.search(r'[\u0900-\u097F]', text):
+        return 'hien'
+
+    # 2. Check for Hinglish (Latin letters + Hindi words)
+    words = re.findall(r"[a-zA-Z]+", text)
+    hinglish_hits = sum(1 for w in words if w in HINGLISH_WORDS)
+
+    if hinglish_hits >= 1:
+        return 1 # "Hinglish"
+
+    # 3. Default to English
+    return 'en'
+
 def get_alignment_score(req,q):
     print("===============Generating Scores============")
     ncert_score = param_ncert.evaluate(
-        task_description=f"You are to determine whether the given question and answer pair is a standard NCERT 10th, 11th or 12th standard question or not.",
+        task_description=
+        f'''You are to determine whether the given question and answer pair is a standard NCERT 10th, 11th or 12th standard question or not.''',
         evaluation_parameter="You to rate how well it is aligned on a scale of 1 to 5. A score of 1 indicates low alignemtn while a score of 5 indicates high alignment.",
         question=q['question'],
         answer=''
     )
-    
-    validity_score = verification_llama.evaluate(
-        task_description=f"You are to determine whether the given question and answer pair is valid or not. Try to solve the question without looking at the answer and then verify with the given answer.",
-        evaluation_parameter="You have to rate its correctness level on a scale of 1 to 2. A score of 1 indicates incorrect question while a score of 2 indicates correct question.",
+
+    language_score = detect_language(q['question'] + '\n' + q['answer'])
+    if(language_score==req.language):
+        language_score=2
+    elif(language_score=='hien'):
+        language_score=1.5
+    else:
+        language_score=1
+
+    qtype_score = guardrails_qwen.evaluate(
+        task_description=
+        f'''You are to determine whether it is an {req.qType} question type or not.''',
+        evaluation_parameter="You to rate whether the question satisfies all conditions are not or not on a scale of 1 to 2. A score of 1 indicates that either or both conditions are not satisfied while a score of 2 indicates that both conditions are satisfied",
         question=q['question'],
         answer=''
+    )
+
+    validity_score = verification_llama.evaluate(
+        task_description=f"You are to determine whether the given question and answer pair is valid or not. Try to solve the question without looking at the answer and then verify with the given answer.",
+        evaluation_parameter="You to rate whether the question is appropriate or not on a scale of 1 to 2. A score of 1 indicates inappropriateness while a score of 2 indicates appropriate question.",
+        question=q['question'],
+        answer=q['answer']
     )
 
     
@@ -850,7 +884,9 @@ The provided bloom level is {req.depth}.''',
         'bloom':bloom_score,
         'ncert': ncert_score,
         'guard': guardrail_score,
-        'validity':validity_score
+        'validity':validity_score,
+        'qtype':qtype_score,
+        'language':language_score
         }
 @app.post("/ask")
 async def ask_llm(req: QueryRequest):
@@ -933,8 +969,9 @@ async def ask_llm(req: QueryRequest):
                     q["source_meta"] = {"pdf_path": source_meta.get("source_path"), "page": source_meta.get("page")}
 
                 scores=get_alignment_score(req,q)
-                if(scores['guard']<1.5 or scores['validity']<1.5):
+                if(scores['guard']<1.5 or scores['validity']<1.5 or scores['structure']<1.5):
                     q['alignment_score']=0.0
+
                 else:
                     q['alignment_score']=round((scores['ncert']+scores['bloom'])/3,2)
             
@@ -1050,8 +1087,18 @@ async def ask_llm(req: QueryRequest):
             for q in questions:
                 scores=get_alignment_score(req,q)
                 print(scores)
-                if(scores['guard']<=1.5 or scores['validity']<=1.5):
+                if(scores['guard']<1.5 or scores['validity']<1.5 or scores['qtype']<1.5 or scores['language']<1.5):
                     q['alignment_score']=0.1
+                    # q['question']='Oops! We can\'t show this question. Try another one 😊'
+                    error_metadata = (
+                        'Errors - ' +
+                        ('The question might be inappropriate/incomplete.\n' if scores['guard'] < 1.5 else '') +
+                        ('The question is not a valid NCERT question.' if scores['validity'] < 1.5 else '') +
+                        (f'The question is not a/an {req.qType} type question' if scores['qtype'] < 1.5 else '') +
+                        (f'The question is not in {req.language}' if scores['language'] < 1.5 else '')
+                    )
+
+                    q['question'] = q['question'] + '\n\n' + error_metadata
                 else:
                     q['alignment_score']=round((scores['ncert']+scores['bloom'])/2,2)
                 if source_text_attach:
