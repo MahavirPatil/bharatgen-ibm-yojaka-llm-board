@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hf-token
+type: Opaque
+stringData:
+  HF_TOKEN: hf_xxxxxxxxxxxx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-qwen32
+  namespace: vllm-models
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: model-qwen32
+  template:
+    metadata:
+      labels:
+        app: model-qwen32
+    spec:
+      tolerations:
+        - key: nvidia.com/gpu
+          value: 'True'
+          effect: "NoSchedule"
+      serviceAccountName: deployer
+      containers:
+        - name: vllm-model-qwen32
+          image: vllm/vllm-openai:v0.14.1
+          env:
+            - name: HUGGING_FACE_HUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token
+                  key: HF_TOKEN
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0,1"
+            - name: VLLM_LOGGING_LEVEL
+              value: INFO
+            - name: HUGGINGFACE_HUB_CACHE
+              value: "/platform_storage/HF_HOME"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Starting Qwen3-32B model on CUDA:0,1"
+              huggingface-cli login --token "$HUGGING_FACE_HUB_TOKEN"
+              vllm serve Qwen/Qwen3-32B \
+                --host 0.0.0.0 \
+                --port 8100 \
+                --tensor-parallel-size 2 \
+                --dtype bfloat16 \
+                --trust-remote-code 
+
+              wait
+          ports:
+            - name: port-model
+              containerPort: 8100
+
+          resources:
+            limits:
+              nvidia.com/gpu: "2"
+          volumeMounts:
+            - name: pvc-model-qwen32
+              mountPath: /platform_storage
+            - name: cache
+              mountPath: /.cache
+            - name: config-volume
+              mountPath: /.config
+            - name: triton-volume
+              mountPath: /.triton
+      volumes:
+        - name: pvc-model-qwen32
+          persistentVolumeClaim:
+            claimName: pvc-model-qwen32
+        - name: cache
+          emptyDir: {}
+        - name: config-volume
+          emptyDir: {}
+        - name: triton-volume
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-qwen32
+  namespace: vllm-models
+spec:
+  type: ClusterIP
+  selector:
+    app: model-qwen32
+  ports:
+    - name: port-model
+      port: 8100
+      targetPort: port-model
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: model-qwen32-qwen32b
+  namespace: vllm-models
+spec:
+  host: qwen32b-verfication.impactsummit.nxtgen.cloud
+  to:
+    kind: Service
+    name: model-qwen32
+  port:
+    targetPort: port-model
+  tls:
+    termination: edge
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-model-qwen32
+  namespace: vllm-models
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: ocs-storagecluster-ceph-rbd

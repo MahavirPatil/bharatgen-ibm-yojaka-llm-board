@@ -287,7 +287,7 @@ except ImportError:
     groq_client = None
 
 # GEval instances for alignment scoring - use Groq by default
-_geval_model = os.getenv("GEVAL_MODEL", "groq-qwen-32b")
+_geval_model = os.getenv("GEVAL_MODEL", "https://qwen32b.impactsummit.nxtgen.cloud/")
 param_ncert = GEval(model=_geval_model, groq_api_key=groq_api_key or "", likert_scale=[1, 2, 3, 4, 5])
 llama_bloom = GEval(model=_geval_model, groq_api_key=groq_api_key or "", likert_scale=[1, 2, 3, 4, 5])
 guardrails_qwen = GEval(model=_geval_model, groq_api_key=groq_api_key or "", likert_scale=[1, 2])
@@ -960,12 +960,12 @@ The provided bloom level is {req.depth}.''',
 
     print(f"===============Done generating Scores====Bloom : {bloom_score}==NCERT : {ncert_score}=Guard : {guardrail_score}=Validity : {validity_score}====")
     return {
-        'bloom':bloom_score,
-        'ncert': ncert_score,
-        'guard': guardrail_score,
-        'validity':validity_score,
-        'qtype':qtype_score,
-        'language':language_score
+            'bloom':bloom_score,
+            'ncert': ncert_score,
+            'guard': guardrail_score,
+            'validity':validity_score,
+            'qtype':qtype_score,
+            'language':language_score
         }
 @app.post("/ask", tags=["Question Generation"])
 async def ask_llm(req: QueryRequest):

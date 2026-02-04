@@ -228,7 +228,7 @@ Format exactly like this:
                     "max_tokens": 2048,
                 }
 
-        resp = requests.post(self.model, json=data)
+        resp = requests.post(self.model, json=data,verify=False)
         resp=resp.json()
         resp=resp['choices'][0]['message']['content']
         remove_think = lambda s: re.sub(r"<think>.*?</think>", "", s, flags=re.DOTALL)
