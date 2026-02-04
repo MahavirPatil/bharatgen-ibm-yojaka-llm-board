@@ -1,11 +1,12 @@
 import os
 import faiss
-import pickle
+import pickle, requests
 from sentence_transformers import SentenceTransformer
+from typing import Tuple, List, Optional
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))  # Go up two levels: ncert_rag_pipe -> backend -> root
-
+BACKEND = "https://edu-rag-bkend.indic-rag.vpc.res.ibm.com"
 # Build absolute paths to the database files (in indexes folder at project root)
 INDEXES_DIR = os.path.join(PROJECT_ROOT, "indexes")
 
@@ -96,9 +97,49 @@ class RAGRetriever:
                 raw = self.chunks[idx]
                 retrieved_texts.append(self._chunk_text(raw))
                 metadata_list.append(self._chunk_meta(raw))
-        
+        print("METASDATA LIST : ",metadata_list)
         best_score = 1 / (1 + distances[0][0])
         return "\n\n".join(retrieved_texts), best_score, metadata_list
+
+    def call_ibm_rag(self, base_url: str, prompt: str,
+                   num_chunks_post_rrf: int = 20,
+                   num_docs_reranker: int = 5,
+                   use_reranker: bool = True,
+                   language: Optional[str] = None,
+                   subject: Optional[str] = None,
+                   class_level: Optional[str] = None,
+                   timeout: float = 10.0) -> Tuple[bool, List[dict], str]:
+        url = base_url.rstrip("/") + "/reference"
+        payload = {
+            "prompt": prompt,
+            "num_chunks_post_rrf": num_chunks_post_rrf,
+            "num_docs_reranker": num_docs_reranker,
+            "use_reranker": use_reranker,
+            "language": language,
+            "subject": subject,
+            "class_level": class_level,
+        }
+        payload = {k: v for k, v in payload.items() if v not in (None, "", [])}
+        try:
+            r = requests.post(url, json=payload, timeout=timeout)
+        except requests.RequestException as e:
+            return False, [], f"Request error calling /reference: {e}"
+        if r.status_code == 404:
+            return False, [], f"{url} returned 404"
+        if not r.ok:
+            # try to parse body for error message
+            try:
+                body = r.json()
+                return False, [], f"/reference error {r.status_code}: {body}"
+            except Exception:
+                return False, [], f"/reference error {r.status_code}: {r.text[:200]}"
+        try:
+            j = r.json()
+            docs = j.get("documents", [])
+            docs = [d if isinstance(d, dict) else {"page_content": str(d)} for d in docs]
+            return True, "\n\n".join(docs), ""
+        except Exception as e:
+            return False, [], [], f"Failed to parse /reference JSON: {e}"
 
 def get_retriever(language: str = "en"):
     """Get or create the global RAG retriever instance for a given language."""
@@ -130,3 +171,20 @@ def main(topic_input, theme_input, language: str = "en"):
     print("\n" + "="*80)
 
     return topic_chunk, theme_chunk, topic_meta, theme_meta
+
+def main_ibm(topic_input, language: str = "en"):
+    retriever = get_retriever(language=language)
+
+    # 2. Retrieval (get_context returns text, score, metadata_list)
+    ok, topic_chunk, err = retriever.call_ibm_rag(BACKEND, topic_input)
+    if(ok):
+        # 3. Output Full Results
+
+        print(f"\n🔵 TOPIC CHUNK (Similarity: {t_score:.2%})")
+        print("-" * 40)
+        print(topic_chunk)
+        
+        print("\n" + "="*80)
+
+        return topic_chunk, "", [{'source_path': 'NA', 'page': 1}], [{'source_path': 'NA', 'page': 1}]
+    return "", "", [{'source_path': 'NA', 'page': 1}], [{'source_path': 'NA', 'page': 1}]

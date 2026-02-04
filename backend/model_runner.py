@@ -35,7 +35,6 @@ def initialize_clients():
                 _groq_client = None
 
 def call_vllm(model_url, prompt: str) -> str:
-    print("Here ")
     data = {
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": 2048,
@@ -80,7 +79,7 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None) ->
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None,
-            lambda: call_vllm(url, prompt)
+            lambda: call_vllm(url, prompt + ("\nHere's some context on the topic : \n"+context_chunks[0] if(context_chunks) else ""))
         )
     if model_id not in model_map:
         return f"<Question>Model '{model_id}' not found. Available: {', '.join(model_map.keys())}</Question><Answer>N/A</Answer>"
@@ -91,7 +90,7 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None) ->
         None,
         lambda: _groq_client.chat.completions.create(
             model=groq_model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "user", "content": prompt+ ("\nHere's some context on the topic : \n"+context_chunks[0] if(context_chunks) else "")}],
             temperature=0.7,
             max_tokens=max_tokens
         )

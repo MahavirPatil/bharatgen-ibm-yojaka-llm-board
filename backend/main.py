@@ -1139,7 +1139,6 @@ async def ask_llm(req: QueryRequest):
                 "### PARAMETERS\n"
                 f"- SUBJECT: {req.subject}\n"
                 f"- CHAPTER: {req.chapter}\n"
-                f"- THEME: {req.theme}\n"
                 f"- QUESTION TYPE: {req.qType}\n"
                 f"- TARGET DEPTH: {req.depth}\n"
                 f"- QUANTITY: {req.num_questions}\n\n"
@@ -1163,7 +1162,7 @@ async def ask_llm(req: QueryRequest):
             source_text_attach = None
             source_meta_attach = None
             if needs_rag(req.model_id):
-                topic_chunk, theme_chunk, topic_meta, theme_meta = get_rag_context(req.chapter, req.theme, language=req.language)
+                topic_chunk, theme_chunk, topic_meta, theme_meta = get_rag_context(req.chapter, "", language=req.language)
                 # More aggressive truncation - limit to ~800 chars each to keep total prompt manageable
                 max_chunk_length = 800
                 if len(topic_chunk) > max_chunk_length:
@@ -1195,7 +1194,6 @@ async def ask_llm(req: QueryRequest):
                     "### SESSION PARAMETERS\n"
                     f"- SUBJECT: {req.subject}\n"
                     f"- CHAPTER: {req.chapter}\n"
-                    f"- THEME: {req.theme}\n"
                     f"- QUESTION TYPE: {req.qType}\n"
                     f"- REQUIRED DEPTH: {req.depth}\n"
                     f"- QUANTITY: {req.num_questions}\n\n"
@@ -1221,7 +1219,7 @@ async def ask_llm(req: QueryRequest):
                     q['alignment_score']=0.1
                     # q['question']='Oops! We can\'t show this question. Try another one 😊'
                     error_metadata = (
-                        'Errors - ' +
+                        '\nErrors - ' +
                         ('The question might be inappropriate/incomplete.\n' if scores['guard'] < 1.5 else '') +
                         ('The question is not a valid NCERT question.' if scores['validity'] < 1.5 else '') +
                         (f'The question is not a/an {req.qType} type question' if scores['qtype'] < 1.5 else '') +
@@ -1236,9 +1234,6 @@ async def ask_llm(req: QueryRequest):
                 if source_meta_attach:
                     q["source_meta"] = source_meta_attach
                 save_question(req, q, scores, q.get("alignment_score"))
-                if(scores['guard']<=1.5 or scores['validity']<=1.5):
-                    q['question']='Oops! We can\'t show this question. Try another one 😊'
-                    q['answer']='NA'
             print(questions)
             return questions
         else:
