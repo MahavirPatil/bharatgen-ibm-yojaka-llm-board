@@ -271,6 +271,7 @@ SessionLocal = sessionmaker(bind=engine)
 
 # Initialize Groq client only
 groq_api_key = os.getenv("GROQ_API_KEY")
+print(groq_api_key)
 groq_client = None
 try:
     from groq import Groq
@@ -288,9 +289,11 @@ except ImportError:
     groq_client = None
 
 # GEval instances for alignment scoring - use Groq by default
-_geval_model = os.getenv("GEVAL_MODEL", "https://qwen32b.impactsummit.nxtgen.cloud/v1/chat/completions")
-_geval_model_2 = os.getenv("GEVAL_MODEL_2", "https://model-serve-app-route.impactsummit.nxtgen.cloud/v1/chat/completions")
-
+_geval_model = os.getenv("GEVAL_MODEL", " https://model-serve-qwen3-32b.impactsummit.nxtgen.cloud/v1/chat/completions")
+_geval_model_2 = os.getenv("GEVAL_MODEL_2", " https://model-serve-qwen3-32b.impactsummit.nxtgen.cloud/v1/chat/completions")
+# _geval_model = os.getenv("GEVAL_MODEL", "groq-qwen-32b")
+# _geval_model_2 = os.getenv("GEVAL_MODEL_2", "groq-qwen-32b")
+# https://param5b.impactsummit.nxtgen.cloud/v1/chat/completions
 param_ncert = GEval(model=_geval_model, groq_api_key=groq_api_key or "", likert_scale=[1, 2, 3, 4, 5])
 llama_bloom = GEval(model=_geval_model_2, groq_api_key=groq_api_key or "", likert_scale=[1, 2, 3, 4, 5])
 guardrails_qwen = GEval(model=_geval_model, groq_api_key=groq_api_key or "", likert_scale=[1, 2])

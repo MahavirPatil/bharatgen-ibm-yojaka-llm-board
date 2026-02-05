@@ -36,4 +36,5 @@ Thumbs.db
 # Old structure (legacy)
 Interface/
 
-questions.db
+questions.db.env
+*.yaml

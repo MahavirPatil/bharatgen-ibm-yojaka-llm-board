@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: hf-token
+  name: hf-token-param
 type: Opaque
 stringData:
   HF: 
@@ -9,17 +9,17 @@ stringData:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: model-qwen32-1
+  name: model-param5b
   namespace: vllm-models
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: model-qwen32-1
+      app: model-param5b
   template:
     metadata:
       labels:
-        app: model-qwen32-1
+        app: model-param5b
     spec:
       tolerations:
         - key: nvidia.com/gpu
@@ -27,16 +27,16 @@ spec:
           effect: "NoSchedule"
       serviceAccountName: deployer
       containers:
-        - name: vllm-model-qwen32-1
+        - name: vllm-model-param5b
           image: vllm/vllm-openai:v0.14.1
           env:
             - name: HUGGING_FACE_HUB_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: hf-token
+                  name: hf-token-param
                   key: HF
             - name: CUDA_VISIBLE_DEVICES
-              value: "4,5"
+              value: "0"
             - name: VLLM_LOGGING_LEVEL
               value: INFO
             - name: HUGGINGFACE_HUB_CACHE
@@ -44,15 +44,19 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              echo "Starting Qwen3-32B model on CUDA:0,1"
+              echo "Starting Param model on CUDA:0"
               huggingface-cli login --token "$HUGGING_FACE_HUB_TOKEN"
-              vllm serve Qwen/Qwen3-32B \
+              jq '.rope_scaling = {"type":"linear","factor":1.0}' \
+              ~/.cache/huggingface/hub/models--bharatgenai--Param-1-5B/snapshots/d18442936c6b2f48dab3ff5d61d607d008fc4919/config.json \
+              > /tmp/config.json && \
+              mv /tmp/config.json \
+              ~/.cache/huggingface/hub/models--bharatgenai--Param-1-5B/snapshots/d18442936c6b2f48dab3ff5d61d607d008fc4919/config.json
+              vllm serve bharatgenai/Param-1-5B \
+              --trust_remote_code \
+              --revision vllm-compatible\
                 --host 0.0.0.0 \
                 --port 8101 \
-                --tensor-parallel-size 2 \
-                --dtype bfloat16 \
-                --trust-remote-code 
-
+                --dtype bfloat16 
               wait
           ports:
             - name: port-model
@@ -60,11 +64,11 @@ spec:
 
           resources:
             limits:
-              nvidia.com/gpu: '2'
+              nvidia.com/gpu: '1'
             requests:
-              nvidia.com/gpu: '2'
+              nvidia.com/gpu: '1'
           volumeMounts:
-            - name: pvc-model-qwen32-1
+            - name: pvc-model-param5b
               mountPath: /platform_storage
             - name: cache
               mountPath: /.cache
@@ -73,9 +77,9 @@ spec:
             - name: triton-volume
               mountPath: /.triton
       volumes:
-        - name: pvc-model-qwen32-1
+        - name: pvc-model-param5b
           persistentVolumeClaim:
-            claimName: pvc-model-qwen32-1
+            claimName: pvc-model-param5b
         - name: cache
           emptyDir: {}
         - name: config-volume
@@ -86,12 +90,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: model-qwen32-1
+  name: model-param5b
   namespace: vllm-models
 spec:
   type: ClusterIP
   selector:
-    app: model-qwen32-1
+    app: model-param5b
   ports:
     - name: port-model
       port: 8101
@@ -100,13 +104,13 @@ spec:
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: model-qwen32-1
+  name: model-param5b
   namespace: vllm-models
 spec:
-  host: qwen32b-verfication.impactsummit.nxtgen.cloud
+  host: param5b.impactsummit.nxtgen.cloud
   to:
     kind: Service
-    name: model-qwen32-1
+    name: model-param5b
   port:
     targetPort: port-model
   tls:
@@ -115,7 +119,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvc-model-qwen32-1
+  name: pvc-model-param5b
   namespace: vllm-models
 spec:
   accessModes:

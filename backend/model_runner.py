@@ -34,13 +34,13 @@ def initialize_clients():
                 print(f"Warning: Failed to initialize Groq client: {e}")
                 _groq_client = None
 
-def call_vllm(model_url, prompt: str) -> str:
+def call_vllm(model_url, prompt: str,max_tokens=2048) -> str:
     data = {
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 2048,
+                "max_tokens": max_tokens,
             }
-
     resp = requests.post(model_url, json=data, verify=False)
+    print(resp)
     resp=resp.json()
     resp=resp['choices'][0]['message']['content']
     remove_think = lambda s: re.sub(r"<think>.*?</think>", "", s, flags=re.DOTALL)
@@ -67,19 +67,21 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None) ->
     model_map = {
         "groq-llama-8b": ("llama-3.1-8b-instant", 65536),
         "groq-llama-70b": ("llama-3.3-70b-versatile", 32768),
-        "Qwen3-32B":("https://qwen32b.impactsummit.nxtgen.cloud/v1/chat/completions",0),
+        "groq-Qwen3-32B":('qwen/qwen3-32b',32768),
+        "Qwen3-32B":(" https://model-serve-qwen3-32b.impactsummit.nxtgen.cloud/v1/chat/completions",0),
+        "Param-5B":("https://param5b.impactsummit.nxtgen.cloud/v1/chat/completions",0),
         "rag-piped-groq-70b": ("llama-3.3-70b-versatile", 32768),
         "groq-llama-guard": ("meta-llama/llama-guard-4-12b", 1024),
         "groq-gpt-oss-120b": ("openai/gpt-oss-120b", 65536),
         "groq-gpt-oss-20b": ("openai/gpt-oss-20b", 65536),
     }
     
-    if('Qwen' in model_id):
+    if(('Qwen' in model_id or 'Param' in model_id) and 'groq' not in model_id):
         url,_ = model_map[model_id]
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None,
-            lambda: call_vllm(url, prompt + ("\nHere's some context on the topic : \n"+context_chunks[0] if(context_chunks) else ""))
+            lambda: call_vllm(url, prompt + ("\nHere's some context on the topic : \n"+context_chunks[0] if(context_chunks) else ""),max_tokens=4000)
         )
     if model_id not in model_map:
         return f"<Question>Model '{model_id}' not found. Available: {', '.join(model_map.keys())}</Question><Answer>N/A</Answer>"
