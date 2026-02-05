@@ -35,16 +35,21 @@ def initialize_clients():
                 _groq_client = None
 
 def call_vllm(model_url, prompt: str,max_tokens=2048) -> str:
+    # print(prompt)
     data = {
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens,
             }
     resp = requests.post(model_url, json=data, verify=False)
     print(resp)
-    resp=resp.json()
-    resp=resp['choices'][0]['message']['content']
-    remove_think = lambda s: re.sub(r"<think>.*?</think>", "", s, flags=re.DOTALL)
-    resp=remove_think(resp)
+    try:
+        resp=resp.json()
+        resp=resp['choices'][0]['message']['content']
+        remove_think = lambda s: re.sub(r"<think>.*?</think>", "", s, flags=re.DOTALL)
+        resp=remove_think(resp)
+    except Exception as e:
+        print("Exception : ",e)
+        resp = "<Question>The model generated thoughts, but not words. 🤔</Question> \n <Answer>Thinking...🤔</Answer>"
     return resp.strip()
 
 async def run_model(model_id: str, prompt: str, context_chunks: tuple = None) -> str:
@@ -77,6 +82,7 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None) ->
     }
     
     if(('Qwen' in model_id or 'Param' in model_id) and 'groq' not in model_id):
+        print("HERERER")
         url,_ = model_map[model_id]
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(

@@ -996,14 +996,9 @@ def _eval_language(req, q):
 def get_alignment_score(req, q):
     print("===============Generating Scores============")
 
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        future_a = executor.submit(_eval_vllm_a, req, q)
-        future_b = executor.submit(_eval_vllm_b, req, q)
-        future_lang = executor.submit(_eval_language, req, q)
-
-        scores_a = future_a.result()
-        scores_b = future_b.result()
-        language_score = future_lang.result()
+    scores_a = _eval_vllm_a(req, q)
+    scores_b = _eval_vllm_b(req, q)
+    language_score = _eval_language(req, q)
 
     result = {
         **scores_a,

@@ -190,6 +190,7 @@ Format exactly like this:
             answer,
             cot
         )
+        print("Probabilities : ",probabilities)
         return self.compute_weighted_score(probabilities)
 
     # --------------------------------------------------
