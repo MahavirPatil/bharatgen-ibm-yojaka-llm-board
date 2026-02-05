@@ -87,7 +87,7 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None) ->
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None,
-            lambda: call_vllm(url, prompt + ("\nHere's some context on the topic : \n"+context_chunks[0] if(context_chunks) else ""),max_tokens=4000)
+            lambda: call_vllm(url, prompt + ("\nHere's some context on the topic : \n"+context_chunks[0] if(context_chunks) else ""),max_tokens=3000)
         )
     if model_id not in model_map:
         return f"<Question>Model '{model_id}' not found. Available: {', '.join(model_map.keys())}</Question><Answer>N/A</Answer>"
