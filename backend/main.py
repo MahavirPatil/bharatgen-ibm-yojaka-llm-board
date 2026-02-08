@@ -1016,8 +1016,33 @@ def get_alignment_score(req, q):
 
     return result
 
+from fastapi import BackgroundTasks
+
+def process_scores_and_save(req, questions):
+    for q in questions:
+        try:
+            scores = get_alignment_score(req, q)
+            if(scores['guard']<1.5 or scores['validity']<1.5 or scores['qtype']<1.5 or scores['language']<1.5):
+                q['alignment_score']=0.1
+                # q['question']='Oops! We can\'t show this question. Try another one 😊'
+                # error_metadata = (
+                #     '\nErrors - ' +
+                #     ('The question might be inappropriate/incomplete.\n' if scores['guard'] < 1.5 else '') +
+                #     ('The question is not a valid NCERT question.' if scores['validity'] < 1.5 else '') +
+                #     (f'The question is not a/an {req.qType} type question' if scores['qtype'] < 1.5 else '') +
+                #     (f'The question is not in {req.language}' if scores['language'] < 1.5 else '')
+                # )
+
+                # q['question'] = q['question'] + '\n\n' + error_metadata
+            else:
+                q['alignment_score']=round((scores['ncert']+scores['bloom'])/2,2)
+            save_question(req, q, scores, q.get("alignment_score"))
+
+        except Exception as e:
+            print("Async scoring failed:", e)
+
 @app.post("/ask", tags=["Question Generation"])
-async def ask_llm(req: QueryRequest):
+async def ask_llm(req: QueryRequest, background_tasks: BackgroundTasks):
     """
     Generate NCERT-aligned academic assessment questions.
     
@@ -1199,7 +1224,7 @@ async def ask_llm(req: QueryRequest):
                     "### INSTRUCTIONS\n"
                     "1. Use the Source Material for factual accuracy. Do not hallucinate outside NCERT bounds.\n"
                     "2. THE DEPTH IS PARAMOUNT: If the depth is DOK 3, do not provide a DOK 1 recall question even if the text is short.\n"
-                    "3. Use LaTeX for all technical notation (e.g., $H_2O$, $\sin(\theta)$).\n\n"
+                    "3. Use LaTeX for all technical notation (e.g., $H_2O$, $sin(theta)$).\n\n"
 
                     "### OUTPUT FORMAT (FOLLOW EXACTLY)\n"
                     "Strictly wrap each question and answer pair in these tags:\n"
@@ -1211,28 +1236,30 @@ async def ask_llm(req: QueryRequest):
             print(raw_output + "\n")
             questions = parse_ai_output(raw_output)
             for q in questions:
-                scores=get_alignment_score(req,q)
-                print(scores)
-                if(scores['guard']<1.5 or scores['validity']<1.5 or scores['qtype']<1.5 or scores['language']<1.5):
-                    q['alignment_score']=0.1
-                    # q['question']='Oops! We can\'t show this question. Try another one 😊'
-                    error_metadata = (
-                        '\nErrors - ' +
-                        ('The question might be inappropriate/incomplete.\n' if scores['guard'] < 1.5 else '') +
-                        ('The question is not a valid NCERT question.' if scores['validity'] < 1.5 else '') +
-                        (f'The question is not a/an {req.qType} type question' if scores['qtype'] < 1.5 else '') +
-                        (f'The question is not in {req.language}' if scores['language'] < 1.5 else '')
-                    )
+                # if(scores['guard']<1.5 or scores['validity']<1.5 or scores['qtype']<1.5 or scores['language']<1.5):
+                #     q['alignment_score']=0.1
+                #     # q['question']='Oops! We can\'t show this question. Try another one 😊'
+                #     error_metadata = (
+                #         '\nErrors - ' +
+                #         ('The question might be inappropriate/incomplete.\n' if scores['guard'] < 1.5 else '') +
+                #         ('The question is not a valid NCERT question.' if scores['validity'] < 1.5 else '') +
+                #         (f'The question is not a/an {req.qType} type question' if scores['qtype'] < 1.5 else '') +
+                #         (f'The question is not in {req.language}' if scores['language'] < 1.5 else '')
+                #     )
 
-                    q['question'] = q['question'] + '\n\n' + error_metadata
-                else:
-                    q['alignment_score']=round((scores['ncert']+scores['bloom'])/2,2)
-                if source_text_attach:
-                    q["source_text"] = source_text_attach
-                if source_meta_attach:
-                    q["source_meta"] = source_meta_attach
-                save_question(req, q, scores, q.get("alignment_score"))
-            print(questions)
+                #     q['question'] = q['question'] + '\n\n' + error_metadata
+                # else:
+                #     q['alignment_score']=round((scores['ncert']+scores['bloom'])/2,2)
+                # if source_text_attach:
+                #     q["source_text"] = source_text_attach
+                # if source_meta_attach:
+                #     q["source_meta"] = source_meta_attach
+                # save_question(req, q, scores, q.get("alignment_score"))
+                q["alignment_score"] = None   # temporary placeholder
+
+                # run scoring + saving asynchronously
+                background_tasks.add_task(process_scores_and_save, req, questions)
+            # print(questions)
             return questions
         else:
             print("[ /ask ] 400: Either 'board' or 'model_id' must be provided")

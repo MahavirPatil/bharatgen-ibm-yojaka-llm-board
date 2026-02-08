@@ -449,28 +449,29 @@
                 </div>
 
                 <div class="space-y-3">
-                    <p class="text-xs font-bold uppercase tracking-widest ml-2" style="color: var(--text-muted);">
-                        Difficulty Level
+                    <p id="difficultyLabel"
+                        class="text-xs font-bold uppercase tracking-widest ml-2"
+                        style="color: var(--text-muted);">
+                        Difficulty Type
                     </p>
                     <div class="flex gap-2">
-                        <button 
-                            onclick="setDepth('DOK level 1: Recall & Reproduction', this)" 
-                            class="depth-btn flex-1 border p-3 rounded-xl text-xs font-bold transition-all"
-                        >
-                            L1
+                        <button id="depthDirectBtn"
+                                onclick="setDepth('DOK level 1: Recall & Reproduction', this)"
+                                class="depth-btn flex-1 border p-3 rounded-xl text-xs font-bold transition-all">
+                            Direct
                         </button>
-                        <button 
-                            onclick="setDepth('DOK level 2: Skill and Concept', this)" 
-                            class="depth-btn flex-1 border p-3 rounded-xl text-xs font-bold transition-all btn-secondary"
-                        >
-                            L2
+
+                        <button id="depthAppliedBtn"
+                                onclick="setDepth('DOK level 2: Skill and Concept', this)"
+                                class="depth-btn flex-1 border p-3 rounded-xl text-xs font-bold transition-all btn-secondary">
+                            Applied
                         </button>
-                        <button 
+                        <!-- <button 
                             onclick="setDepth('DOK level 3: Strategic Thinking', this)" 
                             class="depth-btn flex-1 border p-3 rounded-xl text-xs font-bold transition-all btn-secondary"
                         >
                             L3
-                        </button>
+                        </button> -->
                         <!-- <button 
                             onclick="setDepth('DOK level 4: Extended Thinking', this)" 
                             class="depth-btn flex-1 border p-3 rounded-xl text-xs font-bold transition-all btn-secondary"
@@ -588,7 +589,7 @@
                     </div>
                     <div 
                         id="ascoreContent" 
-                        class="glass-panel p-6 rounded-2xl space-y-4 max-h-48 overflow-y-auto custom-scroll"
+                        class="hidden glass-panel p-6 rounded-2xl space-y-4 max-h-48 overflow-y-auto custom-scroll"
                         style="color: var(--text-secondary);"
                     >
                         Alignment Score :
@@ -682,7 +683,10 @@
                 complexity: "जटिलता स्तर",
                 shuffleAll: "सभी प्रश्न मिलाएँ",
                 generateSession: "सत्र बनाएं",
-                generating: "सत्र बनाया जा रहा है..."
+                generating: "सत्र बनाया जा रहा है...",
+                difficultyType: "कठिनाई स्तर",
+                direct: "प्रत्यक्ष",
+                applied: "अनुप्रयुक्त",
             }
         }
     };
@@ -1319,6 +1323,21 @@
 
 };
 
+        function updateDifficultyLabels() {
+                const label = document.getElementById('difficultyLabel');
+                const directBtn = document.getElementById('depthDirectBtn');
+                const appliedBtn = document.getElementById('depthAppliedBtn');
+
+                if (activeLanguage === 'hi') {
+                    label.innerText = uiTranslations.hi.misc.difficultyType;
+                    directBtn.innerText = uiTranslations.hi.misc.direct;
+                    appliedBtn.innerText = uiTranslations.hi.misc.applied;
+                } else {
+                    label.innerText = "Difficulty Type";
+                    directBtn.innerText = "Direct";
+                    appliedBtn.innerText = "Applied";
+                }
+            }
         function updateClassDropdownLabels() {
             const dropdown = document.getElementById('classDropdown');
             if (!dropdown) return;
@@ -1501,6 +1520,7 @@
             updateSubjectButtons();
             updateClassDropdownLabels();
             renderQuestionTypes();
+            updateDifficultyLabels();
             updateStaticLabels();
             updateShuffleLabel();
             updateGenerateButton();
@@ -1540,6 +1560,7 @@
                         data-type="${type}"
                         value="0"
                         min="0"
+                        max="5"
                         class="q-type-count w-14 bg-transparent text-center font-bold outline-none">
                 `;
                 typeContainer.appendChild(div);
@@ -1662,14 +1683,34 @@
             if(!activeSubject || !chapter) return alert("Select Subject and Chapter");
 
             const typeRequests = [];
+            let totalQuestions = 0;
+
             document.querySelectorAll('.q-type-count').forEach(input => {
-                const count = parseInt(input.value);
-                if(count > 0) {
+                const count = parseInt(input.value) || 0;
+
+                // Per-type limit
+                if (count > 5) {
+                    alert("Maximum 5 questions allowed per question type.");
+                    input.focus();
+                    throw new Error("Per-type limit exceeded");
+                }
+
+                if (count > 0) {
                     typeRequests.push({ type: input.dataset.type, count: count });
+                    totalQuestions += count;
                 }
             });
 
-            if(typeRequests.length === 0) return alert("Enter number of questions for at least one type.");
+            // Total limit check
+            if (totalQuestions > 5) {
+                alert("You can request a maximum of 5 questions in total across all types.");
+                return;
+            }
+
+            if(typeRequests.length === 0) {
+                alert("Enter number of questions for at least one type.");
+                return;
+            }
 
             allQuestions = []; cursor = 0;
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> GENERATING...';
@@ -1787,7 +1828,7 @@
             document.getElementById('aContent').classList.add('hidden');
             document.getElementById('progressBar').innerText = `PROGRESS: ${cursor + 1} OF ${filteredQuestions.length}`;
             document.getElementById('revealBtn').innerText = "REVEAL STUDY LOGIC";
-            renderAlignmentScore(q);
+            // renderAlignmentScore(q);
             // Source text and Explore
             const sourceTextSection = document.getElementById('sourceTextSection');
             const sourceTextContent = document.getElementById('sourceTextContent');
