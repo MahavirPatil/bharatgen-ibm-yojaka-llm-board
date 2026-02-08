@@ -121,7 +121,7 @@ class RAGRetriever:
         }
         payload = {k: v for k, v in payload.items() if v not in (None, "", [])}
         try:
-            r = requests.post(url, json=payload, timeout=timeout)
+            r = requests.post(url, json=payload, timeout=timeout, verify=False)
         except requests.RequestException as e:
             return False, [], f"Request error calling /reference: {e}"
         if r.status_code == 404:
@@ -177,6 +177,7 @@ def main_ibm(topic_input, language: str = "en"):
 
     # 2. Retrieval (get_context returns text, score, metadata_list)
     ok, topic_chunk, err = retriever.call_ibm_rag(BACKEND, topic_input)
+    print(ok, topic_chunk, err)
     if(ok):
         # 3. Output Full Results
 

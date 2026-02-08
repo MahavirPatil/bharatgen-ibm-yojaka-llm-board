@@ -73,8 +73,8 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None) ->
         "groq-llama-8b": ("llama-3.1-8b-instant", 65536),
         "groq-llama-70b": ("llama-3.3-70b-versatile", 32768),
         "groq-Qwen3-32B":('qwen/qwen3-32b',32768),
-        "Qwen3-32B":(" https://model-serve-qwen3-32b.impactsummit.nxtgen.cloud/v1/chat/completions",0),
-        "Param-5B":("https://param5b.impactsummit.nxtgen.cloud/v1/chat/completions",0),
+        "Qwen3-32B":(" https://model-serve-qwen3-32b.impactsummit.nxtgen.cloud/v1/chat/completions",32768),
+        "Param-5B":("https://param5b.impactsummit.nxtgen.cloud/v1/chat/completions",2048),
         "rag-piped-groq-70b": ("llama-3.3-70b-versatile", 32768),
         "groq-llama-guard": ("meta-llama/llama-guard-4-12b", 1024),
         "groq-gpt-oss-120b": ("openai/gpt-oss-120b", 65536),
@@ -83,11 +83,15 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None) ->
     
     if(('Qwen' in model_id or 'Param' in model_id) and 'groq' not in model_id):
         print("HERERER")
-        url,_ = model_map[model_id]
+        url,token_limit = model_map[model_id]
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None,
+<<<<<<< Updated upstream
             lambda: call_vllm(url, prompt + ("\nHere's some context on the topic : \n"+context_chunks[0] if(context_chunks) else ""),max_tokens=3000)
+=======
+            lambda: call_vllm(url, prompt + ("\nHere's some context on the topic : \n"+context_chunks[0] if(context_chunks) else ""),max_tokens=token_limit)
+>>>>>>> Stashed changes
         )
     if model_id not in model_map:
         return f"<Question>Model '{model_id}' not found. Available: {', '.join(model_map.keys())}</Question><Answer>N/A</Answer>"
@@ -107,11 +111,12 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None) ->
 
 def needs_rag(model_id: str) -> bool:
     """Check if a model requires RAG context."""
-    return model_id == "rag-piped-groq-70b"
+    return True
+    # return model_id == "rag-piped-groq-70b"
 
 def get_rag_context(chapter: str, theme: str, language: str = "en") -> tuple:
     """
     Retrieve RAG context chunks for a given chapter and theme, scoped by language.
     Returns (topic_chunk, theme_chunk, topic_meta, theme_meta).
     """
-    return ncert_rag.main(chapter, theme, language=language)
+    return ncert_rag.main_ibm(chapter, language=language)

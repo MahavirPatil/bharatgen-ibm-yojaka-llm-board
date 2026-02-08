@@ -392,7 +392,7 @@ def parse_ai_output(raw_text):
         return []
 
     print(f"[DEBUG] parse_ai_output: Input length: {len(raw_text)} characters")
-    print(f"[DEBUG] parse_ai_output: First 500 chars: {raw_text[:500]}")
+    print(f"[DEBUG] parse_ai_output: First 500 chars: {raw_text}")
 
     # More lenient patterns - try multiple variations
     # Pattern 1: Standard <Question>...</Question> format
