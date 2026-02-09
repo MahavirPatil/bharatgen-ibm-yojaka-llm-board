@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BharatGen - User Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --text-inverse: #ffffff;
+            --card-bg: #ffffff;
+            --card-border: rgba(15, 23, 42, 0.08);
+            --card-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+            --accent-primary: #6366f1;
+            --accent-primary-hover: #4f46e5;
+            --accent-primary-light: rgba(99, 102, 241, 0.1);
+            --accent-secondary: #10b981;
+            --border-light: rgba(15, 23, 42, 0.1);
+            --input-bg: #f8fafc;
+            --input-border: rgba(15, 23, 42, 0.12);
+            --input-focus-border: #6366f1;
+            --btn-secondary-bg: #f1f5f9;
+            --btn-secondary-hover: #e2e8f0;
+            --scrollbar-thumb: #cbd5e1;
+            --scrollbar-track: #f1f5f9;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f1420;
+            --bg-secondary: #161d2f;
+            --text-primary: #e2e8f0;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --text-inverse: #1e293b;
+            --card-bg: #161d2f;
+            --card-border: rgba(255, 255, 255, 0.05);
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            --accent-primary: #6366f1;
+            --accent-primary-hover: #818cf8;
+            --accent-primary-light: rgba(99, 102, 241, 0.15);
+            --accent-secondary: #10b981;
+            --border-light: rgba(255, 255, 255, 0.05);
+            --input-bg: rgba(15, 20, 32, 0.6);
+            --input-border: rgba(255, 255, 255, 0.08);
+            --input-focus-border: #6366f1;
+            --btn-secondary-bg: rgba(30, 41, 59, 0.5);
+            --btn-secondary-hover: rgba(30, 41, 59, 0.8);
+            --scrollbar-thumb: #334155;
+            --scrollbar-track: #1e293b;
+        }
+
+        * { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        .glass-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            box-shadow: var(--card-shadow);
+        }
+        .active-btn {
+            background: var(--accent-primary-light) !important;
+            border-color: var(--accent-primary) !important;
+            color: var(--accent-primary) !important;
+        }
+        .btn-primary {
+            background: var(--accent-primary);
+            color: var(--text-inverse);
+        }
+        .btn-primary:hover { background: var(--accent-primary-hover); }
+        .btn-secondary {
+            background: var(--btn-secondary-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-light);
+        }
+        input, select, textarea {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-primary);
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--input-focus-border);
+            box-shadow: 0 0 0 3px var(--accent-primary-light);
+        }
+        .logo-img { height: 32px; width: auto; }
+        [data-theme="dark"] img[alt="BharatGen"],
+        [data-theme="dark"] img[alt="IBM"],
+        [data-theme="dark"] img[alt="NextGen"] {
+            filter: invert(1) brightness(1.15) contrast(1.1);
+        }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 10px; }
+
+        .chat-container { display: flex; flex-direction: column; height: 600px; }
+        .chat-header { padding: 1.5rem; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; gap: 1rem; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+        .message { padding: 1rem 1.25rem; border-radius: 1.25rem; max-width: 75%; word-wrap: break-word; line-height: 1.6; }
+        .message.user { background: var(--accent-primary); color: white; align-self: flex-end; margin-left: auto; border-bottom-right-radius: 0.25rem; }
+        .message.assistant { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-primary); align-self: flex-start; border-bottom-left-radius: 0.25rem; }
+        .message.assistant table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        .message.assistant table th, .message.assistant table td { border: 1px solid var(--card-border); padding: 0.5rem; text-align: left; }
+        .message.assistant table th { background: var(--accent-primary-light); font-weight: 600; }
+        .message.assistant pre { background: var(--input-bg); padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+        .message.assistant code { background: var(--input-bg); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.9em; }
+        .message.assistant pre code { background: transparent; padding: 0; }
+        .message.typing { display: flex; gap: 0.4rem; padding: 1rem 1.25rem; }
+        .message.typing span { width: 8px; height: 8px; background: var(--text-muted); border-radius: 50%; animation: typing 1.4s infinite; }
+        .message.typing span:nth-child(2) { animation-delay: 0.2s; }
+        .message.typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-10px); } }
+        .chat-input-container { padding: 1.5rem; border-top: 1px solid var(--card-border); display: flex; gap: 0.75rem; align-items: flex-end; }
+        .chat-input { flex: 1; padding: 0.875rem 1.25rem; border-radius: 1.5rem; resize: none; font-family: inherit; max-height: 120px; }
+        .send-button { padding: 0.875rem; border-radius: 50%; background: var(--accent-primary); color: white; border: none; cursor: pointer; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
+        .send-button:hover:not(:disabled) { background: var(--accent-primary-hover); transform: scale(1.05); }
+        .send-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .context-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--accent-primary-light); border: 1px solid var(--accent-primary); border-radius: 2rem; font-size: 0.75rem; font-weight: 600; color: var(--accent-primary); }
+        .welcome-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 2rem; }
+        .modal-context-content h1, .modal-context-content h2, .modal-context-content h3 { font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; }
+        .modal-context-content h1 { font-size: 1.5rem; }
+        .modal-context-content h2 { font-size: 1.25rem; }
+        .modal-context-content h3 { font-size: 1.1rem; }
+        .modal-context-content p { margin-bottom: 0.75rem; }
+        .modal-context-content strong { font-weight: 700; }
+        .modal-context-content em { font-style: italic; }
+        .modal-context-content ul, .modal-context-content ol { margin-left: 1.5rem; margin-bottom: 0.75rem; }
+        .modal-context-content li { margin-bottom: 0.25rem; }
+        .modal-context-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        .modal-context-content table th, .modal-context-content table td { border: 1px solid var(--card-border); padding: 0.5rem; text-align: left; }
+        .modal-context-content table th { background: var(--accent-primary-light); font-weight: 600; }
+        .modal-context-content pre { background: var(--bg-secondary); padding: 0.75rem; border-radius: 0.5rem; overflow-x: auto; margin: 0.5rem 0; }
+        .modal-context-content code { background: var(--bg-secondary); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.9em; font-family: monospace; }
+        .modal-context-content pre code { background: transparent; padding: 0; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10 flex flex-col">
+    <header class="max-w-6xl mx-auto w-full flex justify-between items-center mb-8">
+        <div class="flex items-center gap-5">
+            <img src="/static/logo/BharatGen.svg" alt="BharatGen" class="h-8 logo-img">
+            <img src="/static/logo/IBM.svg" alt="IBM" class="h-8 logo-img">
+            <img src="/static/logo/nxtgen.svg" alt="NextGen" class="h-8 logo-img">
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="window.location.href='/'" class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center" style="color: var(--text-secondary);" title="Back to Home"><i class="fa-solid fa-home"></i></button>
+            <button onclick="toggleSettings()" class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center" style="color: var(--text-secondary);" title="Settings"><i class="fa-solid fa-gear"></i></button>
+            <button onclick="toggleTheme()" class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center" style="color: var(--text-secondary);" title="Toggle theme"><i id="themeIcon" class="fa-solid fa-moon"></i></button>
+        </div>
+    </header>
+
+    <div id="settingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md" style="background: rgba(0, 0, 0, 0.5);">
+        <div class="glass-panel p-8 rounded-3xl w-full max-w-md">
+            <h3 class="font-bold mb-6 text-lg" style="color: var(--text-primary);">Chat Model Configuration</h3>
+            <div class="space-y-6">
+                <div>
+                    <label class="text-xs font-bold uppercase tracking-wider mb-2 block" style="color: var(--text-secondary);">Select Model</label>
+                    <select id="modelSelect" class="w-full rounded-xl p-4 text-sm outline-none transition-all" style="background: var(--bg-secondary); border: 1px solid var(--card-border); color: var(--text-primary);">
+                        <option value="ibm-granite/granite-3.3-8b-instruct">IBM Granite 3.3 8B Instruct</option>
+                        <option value="meta-llama/Llama-3.2-3B">Meta Llama 3.2 3B</option>
+                        <option value="qwen/qwen-2.5-7b-instruct">Qwen 2.5 7B Instruct</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="toggleSettings()" class="w-full btn-primary mt-6 py-4 rounded-xl font-bold">Apply & Close</button>
+        </div>
+    </div>
+
+    <!-- Context Details Modal -->
+    <div id="contextModal" class="hidden fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md" style="background: rgba(0, 0, 0, 0.5);">
+        <div class="glass-panel p-8 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scroll">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-lg" style="color: var(--text-primary);">Context Details</h3>
+                <button onclick="toggleContextModal()" class="w-8 h-8 rounded-full flex items-center justify-center" style="color: var(--text-secondary);" title="Close">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold uppercase tracking-wider mb-2 block" style="color: var(--text-secondary);">Document Information</label>
+                    <div class="p-4 rounded-xl" style="background: var(--input-bg); border: 1px solid var(--input-border);">
+                        <p class="text-sm mb-2"><strong>Filename:</strong> <span id="modalFilename" style="color: var(--text-secondary);">-</span></p>
+                        <p class="text-sm mb-2"><strong>Page Numbers:</strong> <span id="modalPageNumbers" style="color: var(--text-secondary);">-</span></p>
+                        <p class="text-sm mb-2"><strong>Chunk ID:</strong> <span id="modalChunkId" style="color: var(--text-secondary);">-</span></p>
+                        <p class="text-sm"><strong>Type:</strong> <span id="modalType" style="color: var(--text-secondary);">-</span></p>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold uppercase tracking-wider mb-2 block" style="color: var(--text-secondary);">Retrieved Context</label>
+                    <div id="modalContextContainer" class="p-4 rounded-xl custom-scroll modal-context-content" style="background: var(--input-bg); border: 1px solid var(--input-border); max-height: 400px; overflow-y: auto;">
+                        <div id="modalContext" class="text-sm" style="color: var(--text-primary); line-height: 1.6;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+            <button onclick="toggleContextModal()" class="w-full btn-primary mt-6 py-4 rounded-xl font-bold">Close</button>
+        </div>
+    </div>
+
+    <main class="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <aside class="lg:col-span-4 space-y-4">
+            <div class="glass-panel p-6 rounded-3xl space-y-6">
+                <div class="grid grid-cols-2 gap-3">
+                    <button data-subject="Math" onclick="setSubject('Math', this)" class="subj-btn border p-3 rounded-2xl text-xs font-bold tracking-widest transition-all btn-secondary">MATH</button>
+                    <button data-subject="Physics" onclick="setSubject('Physics', this)" class="subj-btn border p-3 rounded-2xl text-xs font-bold tracking-widest transition-all btn-secondary">PHYSICS</button>
+                    <button data-subject="Chemistry" onclick="setSubject('Chemistry', this)" class="subj-btn border p-3 rounded-2xl text-xs font-bold tracking-widest transition-all btn-secondary">CHEMISTRY</button>
+                    <button data-subject="Biology" onclick="setSubject('Biology', this)" class="subj-btn border p-3 rounded-2xl text-xs font-bold tracking-widest transition-all btn-secondary">BIOLOGY</button>
+                </div>
+                <div class="space-y-3">
+                    <select id="languageDropdown" class="w-full rounded-2xl p-4 text-sm outline-none transition-all">
+                        <option value="en">English</option>
+                        <option value="hi">हिंदी</option>
+                    </select>
+                    <select id="classDropdown" class="w-full rounded-2xl p-4 text-sm outline-none transition-all">
+                        <option value="">Select Class</option>
+                        <option value="10">Class 10</option>
+                        <option value="11">Class 11</option>
+                        <option value="12">Class 12</option>
+                    </select>
+                    <select id="chapterDropdown" class="w-full rounded-2xl p-4 text-sm outline-none transition-all">
+                        <option value="">Select Chapter</option>
+                    </select>
+                </div>
+                <button onclick="startChat()" id="startChatBtn" class="w-full btn-primary py-5 rounded-2xl font-bold text-sm tracking-wider transition-all">START CHAT</button>
+            </div>
+        </aside>
+
+        <section class="lg:col-span-8">
+            <div class="glass-panel rounded-3xl chat-container">
+                <div id="welcomeState" class="welcome-state">
+                    <i class="fa-solid fa-comments text-6xl mb-6" style="color: var(--text-muted); opacity: 0.6;"></i>
+                    <h2 class="text-2xl font-bold mb-3" style="color: var(--text-primary);">Welcome to AI Tutor Chat</h2>
+                    <p class="text-base max-w-md" style="color: var(--text-secondary);">Select your subject, class, and chapter from the sidebar, then click "Start Chat" to begin.</p>
+                </div>
+                <div id="chatInterface" class="hidden" style="display: flex; flex-direction: column; height: 100%;">
+                    <div class="chat-header">
+                        <div class="flex-1">
+                            <div id="contextBadge" class="hidden" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fa-solid fa-circle-check" style="color: var(--accent-secondary);"></i>
+                                    <span id="contextInfo" style="font-weight: 600; color: var(--text-primary); font-size: 0.875rem;">Context Loaded</span>
+                                </div>
+                                <div id="contextMeta" style="font-size: 0.75rem; color: var(--text-muted); padding-left: 1.75rem;"></div>
+                            </div>
+                        </div>
+                        <button onclick="toggleContextModal()" id="viewContextBtn" class="hidden w-10 h-10 glass-panel rounded-xl flex items-center justify-center" style="color: var(--text-secondary);" title="View Context Details"><i class="fa-solid fa-file-lines"></i></button>
+                        <button onclick="resetChat()" class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center" style="color: var(--text-secondary);" title="Reset Chat"><i class="fa-solid fa-rotate-right"></i></button>
+                    </div>
+                    <div id="chatMessages" class="chat-messages custom-scroll"></div>
+                    <div id="chatInputContainer" class="chat-input-container hidden">
+                        <textarea id="chatInput" class="chat-input custom-scroll" placeholder="Type your message here..." rows="1" onkeypress="handleKeyPress(event)" oninput="autoResize(this)"></textarea>
+                        <button id="sendBtn" class="send-button" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
+        function toggleSettings() { document.getElementById('settingsModal').classList.toggle('hidden'); }
+        function toggleContextModal() { document.getElementById('contextModal').classList.toggle('hidden'); }
+        initTheme();
+
+        let activeSubject = "", activeLanguage = "en", activeClass = "", selectedModel = "ibm-granite/granite-3.3-8b-instruct";
+        let contextLoaded = false, systemContext = "", messageHistory = [];
+        let contextData = null; // Store full context data from reference API
+
+        // Inline chapter map
+        if (typeof window.CHAPTER_MAP === 'undefined') {
+            window.CHAPTER_MAP = {10:{en:{Math:{Algebra:["Real Numbers","Polynomials","Pair of Linear Equations in Two Variables","Quadratic Equations","Arithmetic Progressions"],Geometry:["Triangles","Circles","Constructions"],Trigonometry:["Introduction to Trigonometry","Trigonometric Identities","Heights and Distances"],Mensuration:["Areas Related to Circles","Surface Areas and Volumes"],Statistics:["Statistics","Probability"]},Physics:{Mechanics:["Motion","Force and Laws of Motion","Gravitation"],Energy:["Work and Energy","Sources of Energy"],Optics:["Light – Reflection and Refraction","The Human Eye and the Colourful World"],Electricity:["Electricity","Magnetic Effects of Electric Current"]},Chemistry:{Physical:["Chemical Reactions and Equations","Acids, Bases and Salts"],Inorganic:["Metals and Non-metals"],Organic:["Carbon and its Compounds"],Environmental:["Sources of Energy","Our Environment","Management of Natural Resources"]},Biology:{LifeProcesses:["Life Processes","Control and Coordination","How do Organisms Reproduce","Heredity and Evolution"],Environment:["Environment","Natural Resources"]}},hi:{Math:{Algebra:["वास्तविक संख्याएँ","बहुपद","दो चरों वाले रैखिक समीकरण युग्म","द्विघात समीकरण","अंकगणितीय श्रेणियाँ"],Geometry:["त्रिभुज","वृत्त","रचनाएँ"],Trigonometry:["त्रिकोणमिति का परिचय","त्रिकोणमितीय सर्वसमिकाएँ","ऊँचाइयाँ और दूरियाँ"],Mensuration:["वृत्तों से संबंधित क्षेत्रफल","पृष्ठीय क्षेत्रफल और आयतन"],Statistics:["सांख्यिकी","प्रायिकता"]},Physics:{Mechanics:["गति","बल तथा गति के नियम","गुरुत्वाकर्षण"],Energy:["कार्य और ऊर्जा","ऊर्जा के स्रोत"],Optics:["प्रकाश – परावर्तन एवं अपवर्तन","मानव नेत्र तथा रंग-बिरंगा संसार"],Electricity:["विद्युत","विद्युत धारा के चुंबकीय प्रभाव"]},Chemistry:{Physical:["रासायनिक अभिक्रियाएँ एवं समीकरण","अम्ल, क्षारक एवं लवण"],Inorganic:["धातु एवं अधातु"],Organic:["कार्बन एवं उसके यौगिक"],Environmental:["ऊर्जा के स्रोत","हमारा पर्यावरण","प्राकृतिक संसाधनों का प्रबंधन"]},Biology:{LifeProcesses:["जीवन प्रक्रियाएँ","नियंत्रण एवं समन्वय","जीव जनन कैसे करते हैं","आनुवंशिकता एवं विकास"],Environment:["पर्यावरण","प्राकृतिक संसाधन"]}}},11:{en:{Math:{Algebra:["Sets","Relations and Functions","Complex Numbers and Quadratic Equations","Permutations and Combinations","Binomial Theorem","Sequences and Series"],Trigonometry:["Trigonometric Functions","Inverse Trigonometric Functions"],Geometry:["Straight Lines","Conic Sections","Introduction to Three Dimensional Geometry"],Calculus:["Limits and Derivatives"],Statistics:["Statistics","Probability"]},Physics:{Mechanics:["Units and Measurements","Motion in a Straight Line","Motion in a Plane","Laws of Motion","Work, Energy and Power","System of Particles and Rotational Motion","Gravitation"],PropertiesOfMatter:["Mechanical Properties of Solids","Mechanical Properties of Fluids","Thermal Properties of Matter"],Thermodynamics:["Thermodynamics","Kinetic Theory"],OscillationsAndWaves:["Oscillations","Waves"]},Chemistry:{Physical:["Some Basic Concepts of Chemistry","Structure of Atom","Thermodynamics","Equilibrium","Redox Reactions"],Inorganic:["Classification of Elements and Periodicity in Properties","Chemical Bonding and Molecular Structure"],Organic:["Organic Chemistry: Some Basic Principles and Techniques","Hydrocarbons"]},Biology:{Diversity:["The Living World","Biological Classification","Plant Kingdom","Animal Kingdom"],CellBiology:["Cell: The Unit of Life","Biomolecules","Cell Cycle and Cell Division"],PlantPhysiology:["Photosynthesis in Higher Plants","Respiration in Plants","Plant Growth and Development"],HumanPhysiology:["Breathing and Exchange of Gases","Body Fluids and Circulation","Excretory Products and their Elimination","Locomotion and Movement","Neural Control and Coordination","Chemical Coordination and Integration"]}},hi:{Math:{Algebra:["समुच्चय","संबंध एवं फलन","समिश्र संख्याएँ एवं द्विघात समीकरण","क्रमचय एवं संचय","द्विपद प्रमेय","अनुक्रम एवं श्रेणी"],Trigonometry:["त्रिकोणमितीय फलन","प्रतिलोम त्रिकोणमितीय फलन"],Geometry:["सरल रेखाएँ","शंकु परिच्छेद","त्रिविमीय ज्यामिति का परिचय"],Calculus:["सीमाएँ एवं अवकलज"],Statistics:["सांख्यिकी","प्रायिकता"]},Physics:{Mechanics:["मात्रक एवं मापन","सीधी रेखा में गति","समतल में गति","गति के नियम","कार्य, ऊर्जा एवं शक्ति","कणों की प्रणाली एवं घूर्णी गति","गुरुत्वाकर्षण"],PropertiesOfMatter:["ठोसों के यांत्रिक गुण","द्रवों के यांत्रिक गुण","पदार्थ के ऊष्मीय गुण"],Thermodynamics:["ऊष्मागतिकी","गतिक सिद्धांत"],OscillationsAndWaves:["दोलन","तरंगें"]},Chemistry:{Physical:["रसायन विज्ञान की कुछ मूल अवधारणाएँ","परमाणु की संरचना","ऊष्मागतिकी","साम्यावस्था","ऑक्सीकरण-अपचयन अभिक्रियाएँ"],Inorganic:["तत्वों का वर्गीकरण एवं गुणों में आवर्तिता","रासायनिक बंधन एवं अणुसंरचना"],Organic:["कार्बनिक रसायन: कुछ मूल सिद्धांत एवं तकनीकें","हाइड्रोकार्बन"]},Biology:{Diversity:["जीव जगत","जैव वर्गीकरण","पादप जगत","प्राणी जगत"],CellBiology:["कोशिका: जीवन की इकाई","जैव-अणु","कोशिका चक्र एवं कोशिका विभाजन"],PlantPhysiology:["उच्च पादपों में प्रकाश संश्लेषण","पौधों में श्वसन","पौधों की वृद्धि एवं विकास"],HumanPhysiology:["श्वसन एवं गैसों का आदान-प्रदान","शरीर द्रव एवं परिसंचरण","उत्सर्जी पदार्थ एवं उनका निष्कासन","गमन एवं संचलन","तंत्रिका नियंत्रण एवं समन्वय","रासायनिक नियंत्रण एवं समन्वय"]}}},12:{en:{Math:{RelationsAndFunctions:["Relations and Functions","Inverse Trigonometric Functions"],Algebra:["Matrices","Determinants"],Calculus:["Continuity and Differentiability","Applications of Derivatives","Integrals","Applications of Integrals","Differential Equations"],VectorsAnd3D:["Vector Algebra","Three Dimensional Geometry"],LinearProgramming:["Linear Programming"],Probability:["Probability"]},Physics:{Electrostatics:["Electric Charges and Fields","Electrostatic Potential and Capacitance"],CurrentElectricity:["Current Electricity"],Magnetism:["Moving Charges and Magnetism","Magnetism and Matter"],ElectromagneticInduction:["Electromagnetic Induction","Alternating Current"],ElectromagneticWaves:["Electromagnetic Waves"],Optics:["Ray Optics and Optical Instruments","Wave Optics"],DualNatureAndAtoms:["Dual Nature of Radiation and Matter","Atoms","Nuclei"],Electronics:["Semiconductor Electronics: Materials, Devices and Simple Circuits"]},Chemistry:{Physical:["Solutions","Electrochemistry","Chemical Kinetics","Surface Chemistry"],Inorganic:["General Principles and Processes of Isolation of Elements","The p-Block Elements","The d- and f-Block Elements","Coordination Compounds"],Organic:["Haloalkanes and Haloarenes","Alcohols, Phenols and Ethers","Aldehydes, Ketones and Carboxylic Acids","Amines","Biomolecules","Polymers","Chemistry in Everyday Life"]},Biology:{Reproduction:["Reproduction in Organisms","Sexual Reproduction in Flowering Plants","Human Reproduction","Reproductive Health"],GeneticsAndEvolution:["Principles of Inheritance and Variation","Molecular Basis of Inheritance","Evolution"],BiologyAndHumanWelfare:["Human Health and Disease","Microbes in Human Welfare"],Biotechnology:["Biotechnology: Principles and Processes","Biotechnology and its Applications"],Ecology:["Organisms and Populations","Ecosystem","Biodiversity and Conservation","Environmental Issues"]}},hi:{Math:{RelationsAndFunctions:["संबंध एवं फलन","प्रतिलोम त्रिकोणमितीय फलन"],Algebra:["आव्यूह","सारणी निर्धारक"],Calculus:["सांतत्य एवं अवकलनीयता","अवकलज के अनुप्रयोग","समाकलन","समाकलों के अनुप्रयोग","अवकल समीकरण"],VectorsAnd3D:["सदिश बीजगणित","त्रिविमीय ज्यामिति"],LinearProgramming:["रैखिक प्रोग्रामन"],Probability:["प्रायिकता"]},Physics:{Electrostatics:["विद्युत आवेश एवं क्षेत्र","वैद्युत स्थैतिक विभव एवं धारिता"],CurrentElectricity:["धारा विद्युत"],Magnetism:["गतिमान आवेश एवं चुम्बकत्व","चुम्बकत्व एवं पदार्थ"],ElectromagneticInduction:["विद्युतचुंबकीय प्रेरण","प्रत्यावर्ती धारा"],ElectromagneticWaves:["विद्युतचुंबकीय तरंगें"],Optics:["किरण प्रकाशिकी एवं प्रकाशीय उपकरण","तरंग प्रकाशिकी"],DualNatureAndAtoms:["विकिरण एवं पदार्थ की द्वैध प्रकृति","परमाणु","नाभिक"],Electronics:["अर्धचालक इलेक्ट्रॉनिकी: पदार्थ, युक्तियाँ एवं सरल परिपथ"]},Chemistry:{Physical:["विलयन","विद्युत रसायन","रासायनिक गतिकी","पृष्ठ रसायन"],Inorganic:["तत्वों के निष्कर्षण के सिद्धांत एवं प्रक्रियाएँ","p-ब्लॉक तत्व","d एवं f-ब्लॉक तत्व","समन्वय यौगिक"],Organic:["हैलोएल्केन एवं हैलोएरीन","एल्कोहॉल, फिनॉल एवं ईथर","एल्डिहाइड, कीटोन एवं कार्बोक्सिलिक अम्ल","ऐमीन","जैव-अणु","बहुलक","दैनिक जीवन में रसायन"]},Biology:{Reproduction:["जीवों में प्रजनन","पुष्पीय पौधों में लैंगिक प्रजनन","मानव प्रजनन","प्रजनन स्वास्थ्य"],GeneticsAndEvolution:["वंशागति एवं विविधता के सिद्धांत","वंशागति का आणविक आधार","विकास"],BiologyAndHumanWelfare:["मानव स्वास्थ्य एवं रोग","मानव कल्याण में सूक्ष्मजीव"],Biotechnology:["जैव प्रौद्योगिकी: सिद्धांत एवं प्रक्रियाएँ","जैव प्रौद्योगिकी एवं उसके अनुप्रयोग"],Ecology:["जीव एवं जनसंख्या","पारितंत्र","जैव विविधता एवं संरक्षण","पर्यावरणीय मुद्दे"]}}}};
+        }
+        const chapterMap = window.CHAPTER_MAP;
+
+        document.getElementById('classDropdown').addEventListener('change', function() {
+            activeClass = this.value;
+            if (activeSubject && activeClass) loadChaptersFromMap();
+        });
+        document.getElementById('languageDropdown').addEventListener('change', function() {
+            activeLanguage = this.value;
+            if (activeSubject && activeClass) loadChaptersFromMap();
+        });
+        document.getElementById('modelSelect').addEventListener('change', function() { selectedModel = this.value; });
+
+        function setSubject(subject, btn) {
+            activeSubject = subject;
+            document.querySelectorAll('.subj-btn').forEach(b => b.classList.remove('active-btn'));
+            btn.classList.add('active-btn');
+            if (activeClass) loadChaptersFromMap();
+        }
+
+        function loadChaptersFromMap() {
+            const chapterDropdown = document.getElementById('chapterDropdown');
+            chapterDropdown.innerHTML = '<option value="">Select Chapter</option>';
+            if (!activeClass || !activeSubject || !activeLanguage) return;
+            const data = chapterMap[activeClass]?.[activeLanguage]?.[activeSubject];
+            if (!data) {
+                chapterDropdown.innerHTML = '<option value="">No chapters available</option>';
+                return;
+            }
+            Object.entries(data).forEach(([topic, chapters]) => {
+                const optGroup = document.createElement('optgroup');
+                optGroup.label = topic;
+                chapters.forEach(ch => {
+                    const opt = document.createElement('option');
+                    opt.value = ch;
+                    opt.innerText = ch;
+                    optGroup.appendChild(opt);
+                });
+                chapterDropdown.appendChild(optGroup);
+            });
+        }
+
+        async function startChat() {
+            const btn = document.getElementById('startChatBtn');
+            const selectedChapter = document.getElementById('chapterDropdown').value;
+            if (!activeSubject || !activeClass || !selectedChapter) {
+                alert("Please select subject, class, and chapter");
+                return;
+            }
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> LOADING...';
+            btn.disabled = true;
+            try {
+                const languageMap = { 'en': 'English', 'hi': 'Hindi' };
+                const response = await fetch('/api/reference', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        prompt: `Overview of ${selectedChapter}`,
+                        num_chunks_post_rrf: 20,
+                        num_docs_reranker: 1,
+                        use_reranker: true,
+                        language: languageMap[activeLanguage] || 'English',
+                        subject: activeSubject,
+                        class_level: `Class-${activeClass}`
+                    })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || 'Failed to load context');
+                }
+                const data = await response.json();
+                console.log('Reference API response:', data);
+                if (data.documents && data.documents.length > 0 && data.documents[0].page_content) {
+                    const doc = data.documents[0];
+                    systemContext = doc.page_content;
+                    contextData = doc; // Store full context data
+                    contextLoaded = true;
+
+                    document.getElementById('welcomeState').style.display = 'none';
+                    document.getElementById('chatInterface').classList.remove('hidden');
+                    document.getElementById('chatInterface').style.display = 'flex';
+
+                    // Show context badge with info
+                    document.getElementById('contextBadge').classList.remove('hidden');
+                    document.getElementById('contextInfo').innerText = `${activeSubject} - Class ${activeClass} - ${selectedChapter}`;
+
+                    // Show filename and page numbers in badge
+                    const filename = doc.filename || 'Unknown';
+                    const pageNumbers = doc.page_numbers || 'N/A';
+                    document.getElementById('contextMeta').innerText = `📄 ${filename} | Pages: ${pageNumbers}`;
+
+                    // Populate modal with context details
+                    document.getElementById('modalFilename').innerText = filename;
+                    document.getElementById('modalPageNumbers').innerText = pageNumbers;
+                    document.getElementById('modalChunkId').innerText = doc.chunk_id || 'N/A';
+                    document.getElementById('modalType').innerText = doc.type || 'text';
+
+                    // Render markdown for context
+                    let contextContent = doc.page_content || 'No content available';
+
+                    // Clean up repetitive chapter headers (like "CHAPTER 14 ... | SUMMARY")
+                    // Keep only the first occurrence, remove subsequent ones
+                    const lines = contextContent.split('\n');
+                    const cleanedLines = [];
+                    let lastHeader = null;
+
+                    for (let line of lines) {
+                        const headerMatch = line.match(/^(CHAPTER\s+\d+[^\n]*\|\s*[A-Z\s]+)$/i);
+                        if (headerMatch) {
+                            // If it's a header and same as last one, skip it
+                            if (headerMatch[1] !== lastHeader) {
+                                cleanedLines.push(line);
+                                lastHeader = headerMatch[1];
+                            }
+                        } else {
+                            cleanedLines.push(line);
+                        }
+                    }
+
+                    contextContent = cleanedLines.join('\n');
+
+                    // Clean up excessive line breaks
+                    contextContent = contextContent.replace(/\n{3,}/g, '\n\n');
+
+                    // Trim whitespace
+                    contextContent = contextContent.trim();
+
+                    if (typeof marked !== 'undefined') {
+                        document.getElementById('modalContext').innerHTML = marked.parse(contextContent);
+                    } else {
+                        document.getElementById('modalContext').innerText = contextContent;
+                    }
+
+                    // Show view context button
+                    document.getElementById('viewContextBtn').classList.remove('hidden');
+
+                    // Show chat input
+                    document.getElementById('chatInputContainer').classList.remove('hidden');
+
+                    messageHistory = [];
+                    document.getElementById('chatMessages').innerHTML = '';
+                    addMessage('assistant', `Hello! I have loaded content about "${selectedChapter}" from ${activeSubject}, Class ${activeClass}. Feel free to ask me any questions about this topic!`);
+                } else {
+                    throw new Error('No context documents found in the response');
+                }
+            } catch (e) {
+                console.error('Error:', e);
+                alert(e.message || "Failed to initialize chat");
+            } finally {
+                btn.innerHTML = 'START CHAT';
+                btn.disabled = false;
+            }
+        }
+
+        function resetChat() {
+            if (confirm('Are you sure you want to reset the chat?')) {
+                document.getElementById('welcomeState').style.display = 'flex';
+                document.getElementById('chatInterface').classList.add('hidden');
+                document.getElementById('chatInterface').style.display = 'none';
+                document.getElementById('chatInputContainer').classList.add('hidden');
+                document.getElementById('viewContextBtn').classList.add('hidden');
+                messageHistory = [];
+                systemContext = "";
+                contextLoaded = false;
+                contextData = null;
+            }
+        }
+
+        function addMessage(role, content, isHtml = false) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            if (isHtml) {
+                messageDiv.innerHTML = content;
+            } else if (role === 'assistant' && typeof marked !== 'undefined') {
+                // Parse markdown to HTML for assistant messages
+                messageDiv.innerHTML = marked.parse(content);
+            } else {
+                messageDiv.textContent = content;
+            }
+
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            return messageDiv;
+        }
+
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message assistant typing';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = '<span></span><span></span><span></span>';
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typingDiv = document.getElementById('typingIndicator');
+            if (typingDiv) {
+                typingDiv.remove();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const userMessage = input.value.trim();
+            if (!userMessage || !contextLoaded) return;
+
+            // Disable input while processing
+            input.disabled = true;
+            sendBtn.disabled = true;
+
+            // Add user message
+            addMessage('user', userMessage);
+            messageHistory.push({ role: 'user', content: userMessage });
+
+            // Clear input
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            try {
+                const response = await fetch('/api/chat-completions', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ model: selectedModel, messages: messageHistory, system_context: systemContext })
+                });
+
+                // Hide typing indicator
+                hideTypingIndicator();
+
+                if (!response.ok) throw new Error('Failed to get response');
+                const data = await response.json();
+                if (data.choices && data.choices.length > 0) {
+                    const assistantMessage = data.choices[0].message.content;
+                    addMessage('assistant', assistantMessage);
+                    messageHistory.push({ role: 'assistant', content: assistantMessage });
+                } else {
+                    throw new Error('No response from model');
+                }
+            } catch (e) {
+                console.error(e);
+                hideTypingIndicator();
+                addMessage('assistant', 'Sorry, I encountered an error. Please try again.');
+            } finally {
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        // Auto-populate from form data
+        async function autoPopulateFromForm() {
+            // Check if form data was injected by POST endpoint
+            if (!window.FORM_DATA) {
+                return; // Not auto-populating
+            }
+
+            const params = window.FORM_DATA;
+
+            // Check if all required parameters are present
+            if (!params.subject || !params.language || !params.class || !params.chapter || !params.context) {
+                return; // Not auto-populating
+            }
+
+            try {
+                // Set language
+                activeLanguage = params.language;
+                document.getElementById('languageDropdown').value = params.language;
+
+                // Set class
+                activeClass = params.class;
+                document.getElementById('classDropdown').value = params.class;
+
+                // Set subject by finding and clicking the button
+                activeSubject = params.subject;
+                const subjectBtn = document.querySelector(`button[data-subject="${params.subject}"]`);
+                if (subjectBtn) {
+                    document.querySelectorAll('.subj-btn').forEach(b => b.classList.remove('active-btn'));
+                    subjectBtn.classList.add('active-btn');
+                }
+
+                // Load chapters
+                loadChaptersFromMap();
+
+                // Wait a bit for chapters to load, then select the chapter
+                await new Promise(resolve => setTimeout(resolve, 100));
+                document.getElementById('chapterDropdown').value = params.chapter;
+
+                // Store the context directly
+                systemContext = params.context;
+                contextLoaded = true;
+
+                // Create mock context data for display
+                contextData = {
+                    page_content: params.context,
+                    filename: 'From Form Submission',
+                    page_numbers: 'N/A',
+                    chunk_id: 'manual',
+                    type: 'text'
+                };
+
+                // Show chat interface
+                document.getElementById('welcomeState').style.display = 'none';
+                document.getElementById('chatInterface').classList.remove('hidden');
+                document.getElementById('chatInterface').style.display = 'flex';
+
+                // Show context badge
+                document.getElementById('contextBadge').classList.remove('hidden');
+                document.getElementById('contextInfo').innerText = `${params.subject} - Class ${params.class} - ${params.chapter}`;
+                document.getElementById('contextMeta').innerText = `📄 From Form Submission`;
+
+                // Populate modal
+                document.getElementById('modalFilename').innerText = 'From Form Submission';
+                document.getElementById('modalPageNumbers').innerText = 'N/A';
+                document.getElementById('modalChunkId').innerText = 'manual';
+                document.getElementById('modalType').innerText = 'text';
+
+                // Render context in modal
+                let contextContent = params.context;
+                if (typeof marked !== 'undefined') {
+                    document.getElementById('modalContext').innerHTML = marked.parse(contextContent);
+                } else {
+                    document.getElementById('modalContext').innerText = contextContent;
+                }
+
+                // Show view context button
+                document.getElementById('viewContextBtn').classList.remove('hidden');
+
+                // Show chat input
+                document.getElementById('chatInputContainer').classList.remove('hidden');
+
+                // Initialize message history
+                messageHistory = [];
+                document.getElementById('chatMessages').innerHTML = '';
+                addMessage('assistant', `Hello! I have loaded content about "${params.chapter}" from ${params.subject}, Class ${params.class}. Feel free to ask me any questions about this topic!`);
+
+            } catch (e) {
+                console.error('Error auto-populating from URL:', e);
+            }
+        }
+
+        // Run auto-populate on page load
+        window.addEventListener('DOMContentLoaded', autoPopulateFromForm);
+    </script>
+</body>
+</html>

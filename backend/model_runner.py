@@ -84,7 +84,7 @@ SUBJECT: {req.subject}
 CHAPTER: {req.chapter}
 REQUIRED DEPTH: {depth_str}
 QUANTITY: {req.num_questions}
-{"Context chunk : "+context_chunk if context_chunks else ""}
+{"Context chunk : "+context_chunks[0] if context_chunks else ""}
 '''
         print("\n============System===============\n",system_prompt,"\n============END===============\n")
         print("\n============User===============\n",user_prompt,"\n============END===============\n")

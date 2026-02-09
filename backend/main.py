@@ -173,7 +173,7 @@ import re
 import traceback
 import json
 from concurrent.futures import ThreadPoolExecutor
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
@@ -602,6 +602,145 @@ async def explore_chat(body: ExploreChatRequest):
         return {"reply": reply.strip()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class ReferenceRequest(BaseModel):
+    prompt: str
+    num_chunks_post_rrf: int = 20
+    num_docs_reranker: int = 1
+    use_reranker: bool = True
+    language: str
+    subject: str
+    class_level: str
+
+class ChatCompletionRequest(BaseModel):
+    messages: List[dict]
+    model: str = "ibm-granite/granite-3.3-8b-instruct"
+    system_context: Optional[str] = None
+
+
+@app.post("/api/reference", tags=["User Chat"])
+async def get_reference(body: ReferenceRequest):
+    """
+    Get reference context/chunk from RAG backend.
+
+    This endpoint retrieves relevant educational content based on the provided parameters.
+    """
+    import httpx
+
+    reference_url = os.getenv("REFERENCE_API_URL", "https://edu-rag-bkend.impactsummit.nxtgen.cloud/reference")
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+            response = await client.post(
+                reference_url,
+                json={
+                    "prompt": body.prompt,
+                    "num_chunks_post_rrf": body.num_chunks_post_rrf,
+                    "num_docs_reranker": body.num_docs_reranker,
+                    "use_reranker": body.use_reranker,
+                    "language": body.language,
+                    "subject": body.subject,
+                    "class_level": body.class_level
+                },
+                headers={
+                    "Content-Type": "application/json"
+                }
+            )
+            response.raise_for_status()
+            return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Reference API error: {str(e)}")
+
+
+@app.post("/api/chat-completions", tags=["User Chat"])
+async def chat_completions(body: ChatCompletionRequest):
+    """
+    Chat completions endpoint for user conversation.
+
+    This endpoint forwards chat requests to the model serve endpoint with optional system context.
+    """
+    import httpx
+
+    chat_url = os.getenv("CHAT_COMPLETION_URL", "https://model-serve-chat.impactsummit.nxtgen.cloud/v1/chat/completions")
+
+    try:
+        messages = []
+
+        # Add system context if provided
+        if body.system_context:
+            messages.append({
+                "role": "system",
+                "content": body.system_context
+            })
+
+        # Add conversation messages
+        messages.extend(body.messages)
+
+        async with httpx.AsyncClient(timeout=60.0, verify=False) as client:
+            response = await client.post(
+                chat_url,
+                json={
+                    "model": body.model,
+                    "messages": messages
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": "Dummy"
+                }
+            )
+            response.raise_for_status()
+            return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chat completion error: {str(e)}")
+
+@app.get("/user-chat")
+async def serve_user_chat():
+    return FileResponse(BASE_DIR / "../frontend/user-chat.html")
+
+@app.post("/user-chat", tags=["User Chat"])
+async def receive_user_chat_form(
+    request: Request,
+    subject: str = Form(...),
+    language: str = Form(...),
+    class_level: str = Form(...),
+    chapter: str = Form(...),
+    context: str = Form(...)
+):
+    """
+    POST endpoint to receive form data and serve user-chat page with embedded data.
+
+    This allows users to submit quiz/session data and transition to the chat interface.
+    """
+    from fastapi.responses import HTMLResponse
+    import json
+
+    # Read the HTML template
+    html_path = BASE_DIR / "../frontend/user-chat.html"
+    with open(html_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+
+    # Inject form data as a script tag before </body>
+    form_data = {
+        'subject': subject,
+        'language': language,
+        'class': class_level,
+        'chapter': chapter,
+        'context': context
+    }
+
+    injection_script = f"""
+    <script>
+        window.FORM_DATA = {json.dumps(form_data)};
+    </script>
+    </body>"""
+
+    html_content = html_content.replace('</body>', injection_script)
+
+    return HTMLResponse(content=html_content)
+
+@app.get("/test-form")
+async def serve_test_form():
+    return FileResponse(BASE_DIR / "../frontend/test-form.html")
 
 
 @app.get("/chapters", tags=["Chapters"])
