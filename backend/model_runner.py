@@ -42,13 +42,13 @@ def call_vllm(model_url, prompt: str,max_tokens=2048,context_chunks=None,req=Non
     if(req):
         depth_str=""
         print(req.qType)
-        if('Level 1' in req.depth):
+        if('level 1' in req.depth):
             depth_str="DOK 1 (Recall): Direct facts from the text. (e.g., 'What is...', 'Define...')"
-        elif('Level 2' in req.depth):
+        elif('level 2' in req.depth):
             depth_str="DOK 2 (Understand/Apply): Interpreting the text. (e.g., 'How does X affect Y?', 'Classify...')"
-        elif('Level 3' in req.depth):
+        elif('level 3' in req.depth):
             depth_str="DOK 3 (Analyze/Evaluate): Using the text to solve non-routine problems. (e.g., 'What would happen if...', 'Justify...')"
-        elif('Level 4' in req.depth):
+        elif('level 4' in req.depth):
             depth_str="DOK 4 (Create/Synthesis): Connecting this text to broader scientific/mathematical principles."
         question_text='Question Text'
 
@@ -69,8 +69,17 @@ Generate each question in the following structure. Repeat this block for every q
 Correct answer with a 2-sentence explanation of the underlying concept]
 </Answer>
 '''
+        if req.language == "hi":
+            lang_block = (
+               "Write all Questions and Answers in Hindi (Devanagari script), while preserving LaTeX/math notation as-is."
+            )
+        else:
+            lang_block = (
+                "Write all Questions and Answers in English."
+            )
         user_prompt = f'''
 {"Generate an MCQ with options in the question text." if 'MCQ' in req.qType else ""}
+{lang_block}
 SUBJECT: {req.subject}
 CHAPTER: {req.chapter}
 REQUIRED DEPTH: {depth_str}
@@ -169,7 +178,8 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None, re
 
 def needs_rag(model_id: str) -> bool:
     """Check if a model requires RAG context."""
-    return model_id in ["rag-piped-llama", "rag-piped-param-instruct", "rag-piped-groq-70b"]
+    # return model_id in ["rag-piped-llama", "rag-piped-param-instruct", "rag-piped-groq-70b"]
+    return True
     # return model_id == "rag-piped-groq-70b"
 
 def get_rag_context(subject:str, class_level:str, chapter: str, theme: str, language: str = "en") -> tuple:
