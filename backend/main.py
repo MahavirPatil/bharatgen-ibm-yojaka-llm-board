@@ -1580,7 +1580,8 @@ async def ask_llm(req: QueryRequest, background_tasks: BackgroundTasks):
                 )
             
             raw_output = await run_model(req.model_id, prompt, context_chunks,req=req if 'Param' in req.model_id else None)
-            print(raw_output + "\n")
+            # print(raw_output + "\n")
+            print(context_chunks)
             questions = parse_ai_output(raw_output)
             for q in questions:
                 # if(scores['guard']<1.5 or scores['validity']<1.5 or scores['qtype']<1.5 or scores['language']<1.5):
@@ -1603,7 +1604,8 @@ async def ask_llm(req: QueryRequest, background_tasks: BackgroundTasks):
                 #     q["source_meta"] = source_meta_attach
                 # save_question(req, q, scores, q.get("alignment_score"))
                 q["alignment_score"] = None   # temporary placeholder
-
+                q['source_text']={'topic_chunk':""}
+                q['source_text']['topic_chunk']=topic_chunk
                 # run scoring + saving asynchronously
                 background_tasks.add_task(process_scores_and_save, req, questions)
             # print(questions)
