@@ -195,7 +195,12 @@
         .question-text {
             line-height: 1.8;
             letter-spacing: -0.01em;
+            white-space: pre-line;
         }
+        #qContent {
+            white-space: pre-line;
+        }
+        
         
         /* Better button styles */
         .btn-primary {
@@ -245,6 +250,29 @@
             background: var(--accent-secondary-light);
             color: var(--text-primary);
         }
+
+        /* logo*/
+        /* Base logo styling */
+.logo-img {
+    height: 32px;
+    width: auto;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+/* Light mode */
+[data-theme="light"] .logo-img {
+    filter: none;
+    opacity: 0.9;
+}
+
+/* Dark mode – invert ALL logos */
+[data-theme="dark"] img[alt="BharatGen"],
+[data-theme="dark"] img[alt="IBM"],
+[data-theme="dark"] img[alt="NextGen"] {
+    filter: invert(1) brightness(1.15) contrast(1.1);
+}
+
+
     </style>
 </head>
 <script>
@@ -264,50 +292,63 @@
 <body class="min-h-screen p-4 md:p-10 flex flex-col" script="">
 
     <header class="max-w-6xl mx-auto w-full flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-2xl font-800 tracking-tighter" style="color: var(--text-primary);">
-                BHARAT<span style="color: var(--accent-primary);">GEN</span>
-            </h1>
-            <p class="text-xs font-semibold tracking-wider uppercase" style="color: var(--text-muted);">
-                NCERT Based Question Generator
-            </p>
+
+    <!-- Left: Logos -->
+    <div class="flex items-center gap-5">
+        <img src="/static/logo/BharatGen.svg" alt="BharatGen" class="h-8 logo-img">
+        <img src="/static/logo/IBM.svg" alt="IBM" class="h-8 logo-img">
+        <img src="/static/logo/nxtgen.svg" alt="NextGen" class="h-8 logo-img">
+    </div>
+
+    <!-- Right: Active Engine + Controls (UNCHANGED LOGIC) -->
+    <div class="flex items-center gap-4">
+
+        <!-- Active Engine (OLD ONE – kept as-is) -->
+        <div class="hidden md:flex flex-col items-end">
+            <span class="text-[10px] uppercase font-bold tracking-widest"
+                  style="color: var(--text-muted);">
+                Active Engine
+            </span>
+            <span id="currentModelLabel"
+                  class="text-sm font-medium"
+                  style="color: var(--text-secondary);">
+                Groq Llama 3.3 70B Versatile
+            </span>
         </div>
-        
-        <div class="flex items-center gap-4">
-            <div class="hidden md:flex flex-col items-end">
-                <span class="text-[10px] uppercase font-bold tracking-widest" style="color: var(--text-muted);">
-                    Active Engine
-                </span>
-                <span id="currentModelLabel" class="text-sm font-medium" style="color: var(--text-secondary);">
-                    Groq Llama 3.3 70B Versatile
-                </span>
-            </div>
-            <button 
-                onclick="toggleTheme()" 
-                class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center theme-toggle"
-                style="color: var(--text-secondary);"
-                title="Toggle theme"
-            >
-                <i id="themeIcon" class="fa-solid fa-moon"></i>
-            </button>
-            <button 
-                onclick="toggleSettings()" 
-                class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center"
-                style="color: var(--text-secondary);"
-                title="Settings"
-            >
-                <i class="fa-solid fa-gear"></i>
-            </button>
-            <button 
-                onclick="window.location.href='/viewq'"
-                class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center"
-                style="color: var(--text-secondary);"
-                title="View Saved Questions"
-            >
-                <i class="fa-solid fa-database"></i>
-            </button>
-        </div>
-    </header>
+
+        <!-- Controls -->
+        <button 
+            onclick="toggleTheme()" 
+            class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center theme-toggle"
+            style="color: var(--text-secondary);"
+            title="Toggle theme"
+        >
+            <i id="themeIcon" class="fa-solid fa-moon"></i>
+        </button>
+
+        <button 
+            onclick="toggleSettings()" 
+            class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center"
+            style="color: var(--text-secondary);"
+            title="Settings"
+        >
+            <i class="fa-solid fa-gear"></i>
+        </button>
+
+        <button 
+            onclick="window.location.href='/viewq'"
+            class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center"
+            style="color: var(--text-secondary);"
+            title="View Saved Questions"
+        >
+            <i class="fa-solid fa-database"></i>
+        </button>
+
+    </div>
+
+</header>
+
+
 
     <div 
         id="contextSidebar" 

@@ -185,11 +185,14 @@ from council import run_council_flow
 from db import save_question, QuestionDB
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
 
 load_dotenv()
 
-# FastAPI app with Swagger documentation
+ # FastAPI app with Swagger documentation
 app = FastAPI(
     title="BharatGen LLM Board API",
     description="""
@@ -259,8 +262,20 @@ A comprehensive API for generating NCERT/CBSE-aligned academic assessment questi
         }
     ]
 )
+
 BASE_DIR = Path(__file__).resolve().parent
 DATABASE_URL = "sqlite:////tmp/bharatgen_questions.db"
+
+# ---------------- Static files (frontend assets) ----------------
+PROJECT_ROOT = BASE_DIR.parent          # bharatgen-ibm-yojaka-llm-board/
+FRONTEND_STATIC = PROJECT_ROOT / "frontend" / "static"
+
+app.mount(
+    "/static",
+    StaticFiles(directory=FRONTEND_STATIC),
+    name="static"
+)
+# ----------------------------------------------------------------
 
 engine = create_engine(
     DATABASE_URL,

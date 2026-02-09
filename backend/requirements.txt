@@ -29,6 +29,8 @@ faiss-cpu
 
 # --- Database ---
 sqlalchemy
+gradio_client
+
 
 # --- Utilities ---
 # pathlib is built-in to Python 3.4+, no need to install
