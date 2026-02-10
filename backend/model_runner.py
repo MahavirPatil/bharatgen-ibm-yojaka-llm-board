@@ -53,7 +53,10 @@ def call_vllm(model_url, prompt: str,max_tokens=2048,context_chunks=None,req=Non
         question_text='Question Text'
 
         if('True' in req.qType):
-            question_text = "Question text starting with State True or False followed by the statement."
+            if(req.language=='hi'):
+                question_text = "Question text starting with सही या गलत बताएं followed by the statement."
+            else:
+                question_text = "Question text starting with State True or False followed by the statement."
         elif('Fill' in req.qType):
             question_text = "Structure it as a sentence with a blank in it. Do not put options like an MCQ."
         elif('MCQ' in req.qType):
