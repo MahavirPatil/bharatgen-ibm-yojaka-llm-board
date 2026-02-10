@@ -1072,8 +1072,7 @@ color:#64748b
     <h2 style="margin:0">Questions</h2>
 
     <div style="display:flex;gap:10px">
-        <button class="secondary" onclick="downloadPDF()">⬇ Download PDF</button>
-
+         <!-- <button class="secondary" onclick="downloadPDF()">⬇ Download PDF</button> -->
         <button onclick="window.location.href='/'">
             ← Home
         </button>
@@ -1296,9 +1295,9 @@ def _eval_vllm_a(req, q):
     )
 
     return {
-        "ncert": ncert_score,
-        "qtype": qtype_score,
-        "guard": guardrail_score,
+        "ncert": round(ncert_score,2),
+        "qtype": round(qtype_score,2),
+        "guard": round(guardrail_score,2),
     }
 
 
@@ -1328,8 +1327,8 @@ def _eval_vllm_b(req, q):
     )
 
     return {
-        "validity": validity_score,
-        "bloom": bloom_score,
+        "validity": round(validity_score,2),
+        "bloom": round(bloom_score,2),
     }
 
 

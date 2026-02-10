@@ -34,7 +34,7 @@ def initialize_clients():
                 print(f"Warning: Failed to initialize Groq client: {e}")
                 _groq_client = None
 
-from gradio_client import Client
+# from gradio_client import Client
 import re
 
 def call_vllm(model_url, prompt: str,max_tokens=2048,context_chunks=None,req=None) -> str:

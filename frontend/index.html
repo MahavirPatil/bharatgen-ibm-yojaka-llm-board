@@ -368,7 +368,7 @@
         </div>
     </div>
 
-    <button id="sidebarToggleBtn" onclick="toggleSidebar()"
+    <button id="sidebarToggleBtn" class='hidden' onclick="toggleSidebar()"
         class="hidden fixed right-6 bottom-6 w-14 h-14 rounded-full shadow-2xl items-center justify-center text-white z-50 hover:scale-110 active:scale-95 transition-all btn-primary">
         <i class="fa-solid fa-book-open"></i>
     </button>
@@ -398,7 +398,7 @@
                         <option value="groq-gpt-oss-20b">Groq GPT OSS 20B</option> -->
                     </select>
                 </div>
-
+                
                 <div class="hidden">
                     <label class="text-xs font-bold uppercase tracking-wider mb-2 block"
                         style="color: var(--text-secondary);">
@@ -1693,6 +1693,7 @@ if (activeSubject) {
                     input.value=value || "";
                     form.appendChild(input);
                 }
+                
                 alert(activeClass);
                 add("subject", activeSubject);
                 add("language", activeLanguage);
