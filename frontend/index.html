@@ -311,9 +311,9 @@
 
         <!-- Left: Logos -->
         <div class="flex items-center gap-5">
-            <img src="/static/logo/BharatGen.svg" alt="BharatGen" class="h-8 logo-img">
-            <img src="/static/logo/IBM.svg" alt="IBM" class="h-8 logo-img">
-            <img src="/static/logo/nxtgen.svg" alt="NextGen" class="h-8 logo-img">
+            <img src="/static/logo/BharatGen.svg" alt="BharatGen" class="h-14 logo-img">
+            <img src="/static/logo/IBM.svg" alt="IBM" class="h-7 logo-img">
+            <img src="/static/logo/nxtgen.svg" alt="NextGen" class="h-7 logo-img">
         </div>
 
         <!-- Right: Active Engine + Controls (UNCHANGED LOGIC) -->
@@ -651,43 +651,41 @@
                                         },
                                         classes: {
                                             select: "कक्षा चुनें",
-                                            10: "कक्षा 10",
-                                            11: "कक्षा 11",
-                                            12: "कक्षा 12"
+                                            10: "कक्षा १०", 
+                                            11: "कक्षा ११",
+                                            12: "कक्षा १२"
                                         },
                                         questionTypes: {
                                             "Multiple Choice (MCQ)": "बहुविकल्पीय प्रश्न",
                                             "Short Answer": "लघु उत्तरीय प्रश्न",
                                             "True/False": "सही / गलत",
-                                            "Case Study Analysis": "केस अध्ययन",
-                                            "Fill-in-the-Blanks": "रिक्त स्थान भरो"
+                                            "Case Study Analysis": "प्रकरण अध्ययन विश्लेषण",
+                                            "Fill-in-the-Blanks": "रिक्त स्थान भरें"
                                         },
                                         misc: {
                                             startChat: "चैट शुरू करें",
                                             workspaceTitle: "सत्र कार्यक्षेत्र",
-  workspaceSubtitle: "अपना अध्ययन सत्र शुरू करने के लिए बाईं ओर प्रश्न वितरण निर्धारित करें।",
-  generateSession: "सत्र बनाएं",
-  generating: "सत्र बनाया जा रहा है...",
+                                            workspaceSubtitle: "अपने अध्ययन सत्र की शुरुआत करने के लिए बाईं ओर प्रश्नों का वितरण निर्धारित करें।",
+                                            generateSession: "सत्र बनाएँ",
+                                            generating: "सत्र बनाया जा रहा है...",
 
-  activeEngine: "सक्रिय इंजन",
-  sourceText: "स्रोत पाठ",
-  boardOpinions: "बोर्ड की राय",
-  explorePdf: "पीडीएफ में देखें",
-  revealLogic: "अध्ययन तर्क दिखाएँ",
-  hideLogic: "तर्क छुपाएँ",
-  progress: "प्रगति",
-  selectSubjectChapter: "विषय और अध्याय चुनें",
+                                            activeEngine: "सक्रिय इंजन",
+                                            sourceText: "स्रोत पाठ",
+                                            boardOpinions: "बोर्ड की राय",
+                                            explorePdf: "पीडीएफ में देखें",
+                                            revealLogic: "अध्ययन तर्क दिखाएँ",
+                                            hideLogic: "तर्क छुपाएँ",
+                                            progress: "प्रगति",
+                                            selectSubjectChapter: "विषय और अध्याय चुनें",
                                             selectChapter: "अध्याय चुनें",
                                             questionDistribution: "प्रश्न वितरण",
                                             workspaceTitle: "सत्र कार्यक्षेत्र",
-workspaceSubtitle: "अपना अध्ययन सत्र शुरू करने के लिए बाईं ओर प्रश्न वितरण निर्धारित करें।",
-generating: "सत्र बनाया जा रहा है...",
-
+                                            workspaceSubtitle: "अपना अध्ययन सत्र शुरू करने के लिए बाईं ओर प्रश्न वितरण निर्धारित करें।",
 
                                             loadingChapters: "अध्याय लोड हो रहे हैं...",
                                             selectSubjectFirst: "पहले विषय चुनें",
                                             complexity: "जटिलता स्तर",
-                                            shuffleAll: "सभी प्रश्न मिलाएँ",
+                                            shuffleAll: "सभी प्रश्नों का क्रम बदलें",
                                             generateSession: "सत्र बनाएं",
                                             generating: "सत्र बनाया जा रहा है...",
                                             difficultyType: "कठिनाई स्तर",
@@ -719,6 +717,10 @@ generating: "सत्र बनाया जा रहा है...",
                                                 ElectromagneticWaves: "विद्युतचुंबकीय तरंगें",
                                                 DualNatureAndAtoms: "द्वैध प्रकृति एवं परमाणु",
                                                 Electronics: "इलेक्ट्रॉनिकी",
+                                                Energy: "ऊर्जा",
+                                                Environment:"पर्यावरण",
+                                                BiologyandHumanWelfare: "जीवविज्ञान एवं मानव कल्याण",
+                                                PropertiesOfMatter: "द्रव्य के गुण",
 
                                                 // Chemistry (already partly present)
                                                 Physical: "भौतिक",
@@ -966,7 +968,7 @@ function toHindiNumber(num) {
                         LifeProcesses: [
                             "जीवन प्रक्रियाएँ",
                             "नियंत्रण एवं समन्वय",
-                            "जीव जनन कैसे करते हैं",
+                            "जीव किस प्रकार प्रजनन करते हैं?",
                             "आनुवंशिकता एवं विकास"
                         ],
                         Environment: [
