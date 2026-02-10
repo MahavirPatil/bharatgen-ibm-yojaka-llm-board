@@ -1609,8 +1609,11 @@ async def ask_llm(req: QueryRequest, background_tasks: BackgroundTasks):
                 #     q["source_meta"] = source_meta_attach
                 # save_question(req, q, scores, q.get("alignment_score"))
                 q["alignment_score"] = None   # temporary placeholder
-                q['source_text']={'topic_chunk':""}
-                q['source_text']['topic_chunk']=topic_chunk
+                q['source_text']={'topic_chunk':None}
+                try:
+                    q['source_text']['topic_chunk']=topic_chunk
+                except:
+                    pass
                 # run scoring + saving asynchronously
                 background_tasks.add_task(process_scores_and_save, req, questions)
             # print(questions)

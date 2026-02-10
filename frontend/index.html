@@ -1497,7 +1497,7 @@ function toHindiNumber(num) {
 
         const availableTypes = [
             "Multiple Choice (MCQ)", "Short Answer", "True/False",
-            "Case Study Analysis", "Fill-in-the-Blanks"
+            // "Case Study Analysis", "Fill-in-the-Blanks"
         ];
 
         let allQuestions = [];
@@ -2030,7 +2030,7 @@ ${activeLanguage === 'hi' ? 'सभी' : 'ALL'}
             const sourceTextSection = document.getElementById('sourceTextSection');
             const sourceTextContent = document.getElementById('sourceTextContent');
             const exploreBtn = document.getElementById('exploreBtn');
-            if (q.source_text) {
+            if (q.source_text.topic_chunk) {
                 sourceTextSection.classList.remove('hidden');
                 document.getElementById('sourceTopicChunk').innerText = q.source_text.topic_chunk || '';
                 const themeEl = document.getElementById('sourceThemeChunk');
