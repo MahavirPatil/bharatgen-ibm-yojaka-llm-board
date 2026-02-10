@@ -21,15 +21,13 @@ spec:
       labels:
         app: model-qwen32-1
     spec:
-      tolerations:
-        - key: nvidia.com/gpu
-          value: 'True'
-          effect: "NoSchedule"
       serviceAccountName: deployer
       containers:
         - name: vllm-model-qwen32-1
           image: vllm/vllm-openai:v0.14.1
           env:
+            - name: PORT
+              value: "8100"
             - name: HUGGING_FACE_HUB_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -70,8 +68,6 @@ spec:
               mountPath: /.cache
             - name: config-volume
               mountPath: /.config
-            - name: triton-volume
-              mountPath: /.triton
       volumes:
         - name: pvc-model-qwen32-1
           persistentVolumeClaim:
@@ -79,8 +75,6 @@ spec:
         - name: cache
           emptyDir: {}
         - name: config-volume
-          emptyDir: {}
-        - name: triton-volume
           emptyDir: {}
 ---
 apiVersion: v1
