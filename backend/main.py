@@ -721,11 +721,16 @@ async def receive_user_chat_form(
 
     # Inject form data as a script tag before </body>
     print(class_level,type(class_level))
+    if(class_level=='10' ):
+        if(subject!='Math'):
+            subject='Science'
+        else:
+            subject='Maths'
     form_data = {
         'subject': subject,
         'language': language,
         'class': class_level,
-        'chapter': 'Science' if(class_level=='10') else chapter,
+        'chapter': chapter,
         'context': context
     }
 

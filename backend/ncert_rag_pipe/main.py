@@ -120,7 +120,10 @@ class RAGRetriever:
         else:
             language = "Hindi"
         if(class_level=='10'):
-            subject='Science'
+            if(subject=='Math'):
+                subject='Maths'
+            else:
+                subject='Science'
         class_level = "Class-"+class_level if class_level else none
         payload = {
             "prompt": prompt,

@@ -344,10 +344,19 @@
                 alert("Please select subject, class, and chapter");
                 return;
             }
+            
             if(activeClass==10)
             {
-                activeSubject='Science';
+                if(activeSubject=="Math")
+                {
+                    activeSubject='Maths';
+                }
+                else{
+                    activeSubject='Science';
+                }
+                
             }
+
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> LOADING...';
             btn.disabled = true;
             try {
@@ -356,7 +365,7 @@
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        prompt: `Overview of ${selectedChapter}`,
+                        prompt: `${selectedChapter}`,
                         num_chunks_post_rrf: 20,
                         num_docs_reranker: 1,
                         use_reranker: true,
