@@ -826,7 +826,7 @@ def viewer_single(qid: str):
 
     if not q:
         raise HTTPException(status_code=404, detail="Question not found")
-
+    print(q.scores_json)
     return {
         "id": q.id,
         "question": q.question,
@@ -1389,6 +1389,10 @@ def process_scores_and_save(req, questions):
                 # q['question'] = q['question'] + '\n\n' + error_metadata
             else:
                 q['alignment_score']=round((scores['ncert']+scores['dok'])/2,2)
+            scores['is_rag'] = q['is_rag']
+            # if(q['is_rag']):
+            #     req.chunk=q['source_text']['topic_chunk']
+            print("SAVING : ",req, q, scores, q.get("alignment_score"))
             save_question(req, q, scores, q.get("alignment_score"))
 
         except Exception as e:
@@ -1610,10 +1614,13 @@ async def ask_llm(req: QueryRequest, background_tasks: BackgroundTasks):
                 # save_question(req, q, scores, q.get("alignment_score"))
                 q["alignment_score"] = None   # temporary placeholder
                 q['source_text']={'topic_chunk':None}
-                try:
-                    q['source_text']['topic_chunk']=topic_chunk
-                except:
-                    pass
+                q['is_rag'] = False
+                if(needs_rag(req.model_id)):
+                    if(topic_chunk!=''):
+                        q['source_text']['topic_chunk']=topic_chunk
+                        q['is_rag'] = True
+                    else:
+                        q['source_text']['topic_chunk']='RAG failed.'
                 # run scoring + saving asynchronously
                 background_tasks.add_task(process_scores_and_save, req, questions)
             # print(questions)

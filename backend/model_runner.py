@@ -115,6 +115,7 @@ QUANTITY: {req.num_questions}
             ]
             }
         resp = requests.post(url, headers=headers, json=payload, verify=False)
+        print("RESPONE : ",resp)
     else:   
         # client = Client("https://1df79b03590242911b.gradio.live/")
         # result = client.predict(
@@ -141,7 +142,7 @@ QUANTITY: {req.num_questions}
                     "max_tokens": max_tokens,
                 }
         resp = requests.post(model_url, json=data, verify=False)
-        print(resp)
+        
     try:
         resp=resp.json()
         resp=resp['choices'][0]['message']['content']
@@ -149,7 +150,7 @@ QUANTITY: {req.num_questions}
         resp=remove_think(resp)
     except Exception as e:
         print("Exception : ",e)
-        resp = "<Question>The model generated thoughts, but not words. 🤔</Question> \n <Answer>Thinking...🤔</Answer>"
+        resp = "<Question>Oops our models are on a chai break. ☕</Question> \n <Answer>We will be back shortly.⚡⚡⚡</Answer>"
     return resp.strip()
 
 async def run_model(model_id: str, prompt: str, context_chunks: tuple = None, req=None) -> str:

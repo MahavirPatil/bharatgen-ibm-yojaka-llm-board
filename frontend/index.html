@@ -1674,7 +1674,7 @@ if (activeSubject) {
                     (q.source_text?.topic_chunk || "") +
                     "\n\n" +
                     (q.source_text?.theme_chunk || "");
-
+                
                 const form = document.createElement("form");
                 form.method = "POST";
                 form.action = "/user-chat";
@@ -2026,7 +2026,19 @@ ${activeLanguage === 'hi' ? 'सभी' : 'ALL'}
             const exploreBtn = document.getElementById('exploreBtn');
             if (q.source_text.topic_chunk) {
                 sourceTextSection.classList.remove('hidden');
-                document.getElementById('sourceTopicChunk').innerText = q.source_text.topic_chunk || '';
+
+                const topicText = q.source_text.topic_chunk || '';
+                document.getElementById('sourceTopicChunk').innerText = topicText;
+
+                // 🔴 Highlight "SOURCE TEXT" button red if RAG failed
+                const toggleBtn = document.getElementById('toggleSourceTextBtn');
+                if (topicText.trim() === 'RAG failed.') {
+                    toggleBtn.style.color = '#ef4444';      // red text
+                    toggleBtn.style.borderColor = '#ef4444';
+                } else {
+                    toggleBtn.style.color = '';
+                    toggleBtn.style.borderColor = '';
+                }
                 const themeEl = document.getElementById('sourceThemeChunk');
                 if (q.source_text.theme_chunk) {
                     themeEl.classList.remove('hidden');
