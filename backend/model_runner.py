@@ -92,12 +92,13 @@ QUANTITY: {req.num_questions}
         print("\n============System===============\n",system_prompt,"\n============END===============\n")
         print("\n============User===============\n",user_prompt,"\n============END===============\n")
         
-        url = 'https://api.bharatgen.dev/v1/chat/completions'
+        # url = 'https://api.bharatgen.dev/v1/chat/completions'
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Bearer bharatgen-secret-token-123" }
-        payload = {
-            "model": "param-17B SFT S1",
+            # "Authorization": "Bearer bharatgen-secret-token-123" 
+            }
+        payload = {   
+            # "model": "param-17B SFT S1",
             "temperature": 0.4,
             "max_length": 2048,
             "chat_template_kwargs": {
@@ -114,8 +115,8 @@ QUANTITY: {req.num_questions}
                 }
             ]
             }
-        resp = requests.post(url, headers=headers, json=payload, verify=False)
-        print("RESPONE : ",resp)
+        resp = requests.post(model_url, headers=headers, json=payload, verify=False)
+        # print("RESPONE : ",resp,resp.content)
     else:   
         # client = Client("https://1df79b03590242911b.gradio.live/")
         # result = client.predict(
@@ -148,6 +149,8 @@ QUANTITY: {req.num_questions}
         resp=resp['choices'][0]['message']['content']
         remove_think = lambda s: re.sub(r"<think>.*?</think>", "", s, flags=re.DOTALL)
         resp=remove_think(resp)
+        if('<Answer>' in resp):
+            resp=resp+'</Answer>'
     except Exception as e:
         print("Exception : ",e)
         resp = "<Question>Oops our models are on a chai break. ☕</Question> \n <Answer>We will be back shortly.⚡⚡⚡</Answer>"
@@ -176,8 +179,8 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None, re
         "groq-Qwen3-32B":('qwen/qwen3-32b',32768),
         "Qwen3-32B":(" https://model-serve-qwen3-32b.impactsummit.nxtgen.cloud/v1/chat/completions",32768),
         # "Param-17B":("https://param5b.impactsummit.nxtgen.cloud/v1/chat/completions",2048),
-        "Param-17B":("https://param17b.impactsummit.nxtgen.cloud/",2048),
-        "Param-17B-IBM-RAG":("https://param17b.impactsummit.nxtgen.cloud/",2048),
+        "Param-17B":("https://param17b.impactsummit.nxtgen.cloud/v1/chat/completions",2048),
+        "Param-17B-IBM-RAG":("https://param17b.impactsummit.nxtgen.cloud/v1/chat/completions",2048),
         "rag-piped-groq-70b": ("llama-3.3-70b-versatile", 32768),
         "groq-llama-guard": ("meta-llama/llama-guard-4-12b", 1024),
         "groq-gpt-oss-120b": ("openai/gpt-oss-120b", 65536),
@@ -187,9 +190,10 @@ async def run_model(model_id: str, prompt: str, context_chunks: tuple = None, re
     if(('Qwen' in model_id or 'Param' in model_id) and 'groq' not in model_id):
         url,token_limit = model_map[model_id]
         loop = asyncio.get_event_loop()
+        print("MODEL URL : ",url)
         return await loop.run_in_executor(
             None,
-            lambda: call_vllm(url, prompt + ("\nHere's some context on the topic : \n"+context_chunks[0] if(context_chunks) else ""),max_tokens=token_limit,context_chunks=context_chunks,req=req)
+            lambda: call_vllm(url, prompt + ("\nHere's some context on the topic : \n"+context_chunks[0] if(context_chunks) else ""),max_tokens=token_limit,context_chunks=context_chunks,req=req if('Param' in model_id) else None)
         )
     if model_id not in model_map:
         return f"<Question>Model '{model_id}' not found. Available: {', '.join(model_map.keys())}</Question><Answer>N/A</Answer>"
