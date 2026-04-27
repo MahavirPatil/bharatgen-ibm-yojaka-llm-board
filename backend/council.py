@@ -2,10 +2,19 @@
 LLM Council module - implements the three-stage board flow for collaborative question generation.
 Inspired by karpathy/llm-council but adapted for question generation domain.
 Uses Groq models only.
+Unified RAG retrieval via MinimalRAGRetriever.
 """
 import asyncio
+import os
+from pathlib import Path
 from typing import List, Dict, Optional, Tuple
-from model_runner import run_model, needs_rag, get_rag_context
+try:
+    from .model_runner import run_model
+    from .rag_retriever import MinimalRAGRetriever
+
+except ImportError:
+    from model_runner import run_model
+    from rag_retriever import MinimalRAGRetriever
 
 
 def build_member_generate_one_prompt(subject: str, chapter: str, theme: str, qType: str,
@@ -290,94 +299,67 @@ def parse_member_review(raw_output: str) -> Dict:
 async def run_council_flow(chairman_model_id: str, member_model_ids: List[str],
                           language: str,
                           subject: str, chapter: str, theme: str, qType: str,
-                          depth: str, num_questions: int) -> Dict:
+                          depth: str, num_questions: int,
+                          use_rag: bool = False,
+                          enable_dynamic_dropoff: bool = True,
+                          enable_graph_expansion: bool = False,
+                          temperature: float = 0.7) -> Dict:
     """
     Execute the three-stage council flow for question generation (Groq models only).
     Chairman proposes -> Members review -> Chairman synthesizes.
+    Uses unified MinimalRAGRetriever for RAG context.
     
     Returns:
         Dictionary with:
         - chairman_proposal: Original proposal text
         - member_opinions: List of member reviews
         - final_output: Raw synthesis/output
+        - source_chunks: Retrieved RAG context chunks
+        - source_meta: Metadata from first retrieved chunk
     """
-    # Check if any model needs RAG
-    needs_rag_context = needs_rag(chairman_model_id) or any(needs_rag(mid) for mid in member_model_ids)
-    
     language = (language or "en").lower()
     if language == "hi":
         print("[Council] Language=Hindi; prompts will enforce Hindi (Devanagari) output.")
-    topic_chunk = None
-    theme_chunk = None
+    
+    topic_chunk = ""
+    theme_chunk = ""
     topic_meta = []
     theme_meta = []
-    if needs_rag_context:
-        # RAG context retrieval might be blocking, run in executor
-        loop = asyncio.get_event_loop()
-        topic_chunk, theme_chunk, topic_meta, theme_meta = await loop.run_in_executor(
-            None,
-            lambda: get_rag_context(chapter, theme, language=language)
-        )
-    
-    context_chunks = (topic_chunk, theme_chunk) if topic_chunk and theme_chunk else None
     source_meta = None
-    if needs_rag_context and topic_meta and len(topic_meta) > 0 and topic_meta[0]:
-        source_meta = topic_meta[0]
-    elif needs_rag_context and theme_meta and len(theme_meta) > 0 and theme_meta[0]:
-        source_meta = theme_meta[0]
+    
+    if use_rag:
+        # Fetch RAG context using unified retriever
+        rag_store_dir = Path(os.getenv("RAG_STORE_DIR", str(Path(__file__).parent.parent / "rag_store_books"))).resolve()
+        try:
+            retriever = MinimalRAGRetriever(rag_store_dir)
+            loop = asyncio.get_event_loop()
+            topic_chunk, theme_chunk, topic_meta, theme_meta = await loop.run_in_executor(
+                None,
+                lambda: retriever.retrieve_dual(
+                    topic_query=chapter,
+                    theme_query=theme,
+                    subject=subject,
+                    chapter=chapter,
+                    block=None,
+                    language=language,
+                    k=5,
+                    enable_dynamic_dropoff=enable_dynamic_dropoff,
+                    enable_graph_expansion=enable_graph_expansion,
+                )
+            )
+            if topic_meta and len(topic_meta) > 0:
+                source_meta = topic_meta[0]
+            elif theme_meta and len(theme_meta) > 0:
+                source_meta = theme_meta[0]
+        except Exception as e:
+            print(f"[Council] RAG retrieval failed: {e}. Proceeding without RAG context.")
     
     # Stage 1: Chairman proposal
     chairman_prompt = build_chairman_proposal_prompt(
         subject, chapter, theme, qType, depth, num_questions, language, topic_chunk, theme_chunk
     )
     
-    # Build RAG prompt for RAG models
-    if needs_rag(chairman_model_id) and context_chunks:
-        # For RAG models, we need to use the RAG-specific prompt format
-        _lang = (language or "en").lower()
-        _rag_lang = (
-            "### OUTPUT LANGUAGE (CRITICAL)\n"
-            "You MUST write all Questions and Answers in Hindi only (Devanagari script). Do not use English. Keep LaTeX as-is.\n\n"
-        ) if _lang == "hi" else (
-            "### OUTPUT LANGUAGE\n"
-            "Write all Questions and Answers in English.\n\n"
-        )
-        chairman_prompt = (
-            f"{_rag_lang}"
-            "### ROLE\n"
-            "Act as an expert NCERT Assessment Designer. Your task is to use the provided 'Source Material' "
-            "to generate high-quality questions. You must strictly adhere to the requested Cognitive Depth.\n\n"
-            
-            "### SOURCE MATERIAL (RAG CONTEXT)\n"
-            f"{topic_chunk}\n\n"
-            
-            "### COGNITIVE DEPTH FRAMEWORK (Bloom's x DOK)\n"
-            "If the source material is simple, you must still elevate the question to meet these levels:\n"
-            "- DOK 1 (Recall): Direct facts from the text. (e.g., 'What is...', 'Define...')\n"
-            "- DOK 2 (Understand/Apply): Interpreting the text. (e.g., 'How does X affect Y?', 'Classify...')\n"
-            "- DOK 3 (Analyze/Evaluate): Using the text to solve non-routine problems. (e.g., 'What would happen if...', 'Justify...')\n"
-            "- DOK 4 (Create/Synthesis): Connecting this text to broader scientific/mathematical principles.\n\n"
-            
-            "### SESSION PARAMETERS\n"
-            f"- SUBJECT: {subject}\n"
-            f"- CHAPTER: {chapter}\n"
-            f"- THEME: {theme}\n"
-            f"- QUESTION TYPE: {qType}\n"
-            f"- REQUIRED DEPTH: {depth}\n"
-            f"- QUANTITY: {num_questions}\n\n"
-            
-            "### INSTRUCTIONS\n"
-            "1. Use the Source Material for factual accuracy. Do not hallucinate outside NCERT bounds.\n"
-            "2. THE DEPTH IS PARAMOUNT: If the depth is DOK 3, do not provide a DOK 1 recall question even if the text is short.\n"
-            "3. Use LaTeX for all technical notation (e.g., $H_2O$, $\sin(\theta)$).\n\n"
-            
-            "### OUTPUT FORMAT (FOLLOW EXACTLY)\n"
-            "Strictly wrap each question and answer pair in these tags:\n"
-            "<Question> [Text + Options if MCQ] </Question>\n"
-            "<Answer> [Correct Answer + 1-sentence logic based on the Source Material] </Answer>"
-        )
-    
-    chairman_output = await run_model(chairman_model_id, chairman_prompt, context_chunks)
+    chairman_output = await run_model(chairman_model_id, chairman_prompt, req=None, temperature=temperature)
     
     # Stage 2: Member reviews (parallel execution)
     member_tasks = []
@@ -387,50 +369,7 @@ async def run_council_flow(chairman_model_id: str, member_model_ids: List[str],
             subject, chapter, theme, qType, depth, language, chairman_output, member_letter,
             topic_chunk, theme_chunk
         )
-        
-        # Build RAG prompt for RAG models
-        if needs_rag(member_id) and context_chunks:
-            topic_chunk, theme_chunk = context_chunks
-            _lang = (language or "en").lower()
-            _rag_lang = (
-                "### OUTPUT LANGUAGE (CRITICAL)\n"
-                "You MUST write your feedback and alternative in Hindi only (Devanagari script). Do not use English.\n\n"
-            ) if _lang == "hi" else (
-                "### OUTPUT LANGUAGE\n"
-                "Write your feedback and alternative in English.\n\n"
-            )
-            member_prompt = (
-                f"{_rag_lang}"
-                "### ROLE\n"
-                f"You are Board Member {member_letter} of an LLM Board. Your role is to critically review "
-                "the Chairman's proposed questions and provide constructive feedback.\n\n"
-                
-                "### SOURCE MATERIAL (RAG CONTEXT)\n"
-                f"{topic_chunk}\n\n"
-                
-                "### CONTEXT\n"
-                f"- SUBJECT: {subject}\n"
-                f"- CHAPTER: {chapter}\n"
-                f"- THEME: {theme}\n"
-                f"- QUESTION TYPE: {qType}\n"
-                f"- TARGET DEPTH: {depth}\n\n"
-                
-                "### CHAIRMAN'S PROPOSAL\n"
-                f"{chairman_output}\n\n"
-                
-                "### YOUR TASK\n"
-                "1. Evaluate the quality, accuracy, and appropriateness of the proposed question(s).\n"
-                "2. Rate the proposal on a scale of 1-10 (where 10 is excellent).\n"
-                "3. Provide specific feedback.\n"
-                "4. Optionally, suggest an alternative phrasing or improvement.\n\n"
-                
-                "### OUTPUT FORMAT\n"
-                "<Rating>X</Rating>\n"
-                "<Feedback>\n[Your detailed feedback here]\n</Feedback>\n"
-                "<Alternative>\n[Optional: Your improved version, or 'None']\n</Alternative>"
-            )
-        
-        member_tasks.append(run_model(member_id, member_prompt, context_chunks))
+        member_tasks.append(run_model(member_id, member_prompt, req=None, temperature=temperature))
     
     member_outputs = await asyncio.gather(*member_tasks)
     
@@ -447,60 +386,12 @@ async def run_council_flow(chairman_model_id: str, member_model_ids: List[str],
         topic_chunk, theme_chunk
     )
     
-    # Build RAG prompt for RAG models
-    if needs_rag(chairman_model_id) and context_chunks:
-        topic_chunk, theme_chunk = context_chunks
-        _lang = (language or "en").lower()
-        _rag_lang = (
-            "### OUTPUT LANGUAGE (CRITICAL)\n"
-            "You MUST write all final Questions and Answers in Hindi only (Devanagari script). Do not use English.\n\n"
-        ) if _lang == "hi" else (
-            "### OUTPUT LANGUAGE\n"
-            "Write all final Questions and Answers in English.\n\n"
-        )
-        synthesis_prompt = (
-            f"{_rag_lang}"
-            "### ROLE\n"
-            "You are the Chairman of an LLM Board. Synthesize the best possible final question(s) based on board member feedback.\n\n"
-            
-            "### SOURCE MATERIAL (RAG CONTEXT)\n"
-            f"{topic_chunk}\n\n"
-            
-            "### CONTEXT\n"
-            f"- SUBJECT: {subject}\n"
-            f"- CHAPTER: {chapter}\n"
-            f"- THEME: {theme}\n"
-            f"- QUESTION TYPE: {qType}\n"
-            f"- TARGET DEPTH: {depth}\n\n"
-            
-            "### YOUR ORIGINAL PROPOSAL\n"
-            f"{chairman_output}\n\n"
-            
-            "### BOARD MEMBER REVIEWS\n"
-        )
-        for i, opinion in enumerate(member_opinions):
-            synthesis_prompt += (
-                f"\n### Board Member {chr(65 + i)} Review:\n"
-                f"Rating: {opinion.get('rating', 'N/A')}/10\n"
-                f"Feedback: {opinion.get('feedback', 'No feedback provided')}\n"
-            )
-            if opinion.get('alternative') and opinion['alternative'].lower() != 'none':
-                synthesis_prompt += f"Alternative Suggestion: {opinion['alternative']}\n"
-        
-        synthesis_prompt += (
-            "\n### YOUR TASK\n"
-            "Synthesize the best possible question(s) incorporating valid suggestions.\n\n"
-            
-            "### OUTPUT FORMAT (FOLLOW EXACTLY)\n"
-            "<Question> [Text + Options if MCQ] </Question>\n"
-            "<Answer> [Correct Answer + 1-sentence logic] </Answer>"
-        )
-    
-    final_output = await run_model(chairman_model_id, synthesis_prompt, context_chunks)
+    final_output = await run_model(chairman_model_id, synthesis_prompt, req=None, temperature=temperature)
     
     source_chunks = None
     if topic_chunk or theme_chunk:
         source_chunks = {"topic_chunk": topic_chunk or "", "theme_chunk": theme_chunk or ""}
+    
     return {
         "chairman_proposal": chairman_output,
         "member_opinions": member_opinions,

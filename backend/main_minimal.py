@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, List, Optional
+import time
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -19,14 +20,14 @@ try:
     from .rag_retriever import MAX_CHUNK_WORDS, MIN_CHUNK_WORDS, MinimalRAGRetriever
     from .parse_ai_output import parse_ai_output
     from .GEval import GEval
-    from .model_runner import needs_rag, run_model, set_clients
+    from .model_runner import run_model, set_clients
     from .council import run_council_flow
     from .prompt_builder import build_prompt_from_request
 except ImportError:
     from rag_retriever import MAX_CHUNK_WORDS, MIN_CHUNK_WORDS, MinimalRAGRetriever
     from parse_ai_output import parse_ai_output
     from GEval import GEval
-    from model_runner import needs_rag, run_model, set_clients
+    from model_runner import run_model, set_clients
     from council import run_council_flow
     from prompt_builder import build_prompt_from_request
 
@@ -75,12 +76,17 @@ class QueryRequest(BaseModel):
     subject: str
     chapter: str
     standard: str
-    theme: str = "general"
+    theme: str = ""
     qType: str
     num_questions: int = Field(default=1, ge=1, le=5)
     block: Optional[str] = None
     use_rag: bool = True
     board: Optional[BoardConfig] = None
+    enable_alignment: bool = True
+    enable_dynamic_dropoff: bool = True
+    enable_graph_expansion: bool = False
+    enable_task_keywords: bool = True
+    temperature: float = Field(default=0.7, ge=0.0, le=1.0)
 
 
 SUPPORTED_QTYPES = {
@@ -115,9 +121,8 @@ def _extract_option_markers(question_text: str) -> set:
 def _check_question_type_alignment(requested_qtype: str, question_text: str, answer_text: str) -> Dict[str, Any]:
     text = (question_text or "").strip()
     answer = (answer_text or "").strip()
-    combined = f"{text}\n{answer}"
 
-    is_tf = bool(re.search(r"(?i)\b(true|false)\b|सही\s*/\s*गलत|सही\s*या\s*गलत", combined))
+    is_tf = bool(re.search(r"(?i)\b(true|false)\b|सही\s*/\s*गलत|सही\s*या\s*गलत", text))
     option_markers = _extract_option_markers(text)
     is_mcq = len(option_markers) >= 4
 
@@ -442,7 +447,7 @@ ALLOWED_GROQ_MODELS = {
     "groq-qwen-32b",
     "groq-llama-guard",
     "groq-gpt-oss-120b",
-    "groq-gpt-oss-20b",
+    "groq-gpt-oss-20b"
 }
 
 
@@ -506,9 +511,11 @@ async def _score_and_enrich_questions(
     source_text: Optional[Dict[str, Any]] = None,
     is_rag: bool = False,
     generated_count: Optional[int] = None,
+    generation_time_ms: Optional[float] = None,
 ) -> List[Dict[str, Any]]:
     enriched: List[Dict[str, Any]] = []
     source_meta = _build_source_meta(first_meta, retrieval_query)
+    timestamp = datetime.now(timezone.utc).isoformat()
 
     async def _evaluate_single(question: Dict[str, Any]) -> Dict[str, Any]:
         type_check = _check_question_type_alignment(
@@ -516,28 +523,46 @@ async def _score_and_enrich_questions(
             question_text=question.get("question", ""),
             answer_text=question.get("answer", ""),
         )
-        scores = await asyncio.to_thread(get_alignment_score, req, question)
-        if (
-            scores["guard"] < 1.5
-            or scores["validity"] < 1.5
-            or scores["qtype"] < 1.5
-            or scores["language"] < 1.5
-        ):
-            alignment_score = 0.0
-        else:
-            alignment_score = round((scores["ncert"] + scores["dok"]) / 2, 2)
+        
+        # Alignment scoring - only if enabled
+        scores = None
+        alignment_score = None
+        if req.enable_alignment:
+            scores = await asyncio.to_thread(get_alignment_score, req, question)
+            if (
+                scores["guard"] < 1.5
+                or scores["validity"] < 1.5
+                or scores["qtype"] < 1.5
+                or scores["language"] < 1.5
+            ):
+                alignment_score = 0.0
+            else:
+                alignment_score = round((scores["ncert"] + scores["dok"]) / 2, 2)
 
         item = dict(question)
-        item["scores"] = scores
-        item["alignment_score"] = alignment_score
+        if scores is not None:
+            item["scores"] = scores
+        if alignment_score is not None:
+            item["alignment_score"] = alignment_score
         item["is_rag"] = is_rag
         item["source_text"] = source_text or {"topic_chunk": "", "theme_chunk": ""}
         item["source_meta"] = source_meta
+        item["generation_settings"] = {
+            "use_rag": bool(req.use_rag),
+            "enable_alignment": bool(req.enable_alignment),
+            "enable_dynamic_dropoff": bool(req.enable_dynamic_dropoff),
+            "enable_graph_expansion": bool(req.enable_graph_expansion),
+            "enable_task_keywords": bool(req.enable_task_keywords),
+            "temperature": float(req.temperature),
+        }
         item["type_match"] = type_check["type_match"]
         item["type_match_reason"] = type_check["type_match_reason"]
         item["requested_count"] = req.num_questions
         item["generated_count"] = generated_count if generated_count is not None else len(questions)
         item["count_warning"] = item["generated_count"] < req.num_questions
+        item["timestamp"] = timestamp
+        if generation_time_ms is not None:
+            item["generation_time_ms"] = generation_time_ms
         if board_metadata is not None:
             item["board_metadata"] = board_metadata
         return item
@@ -564,6 +589,8 @@ def health() -> Dict[str, Any]:
 
 @app.post("/ask")
 async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
+    start_time = time.time()  # Start timer
+    
     if groq_client is None:
         raise HTTPException(status_code=500, detail="Groq client not available. Set GROQ_API_KEY and install groq.")
 
@@ -598,6 +625,9 @@ async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
             depth=req.depth,
             num_questions=req.num_questions,
             use_rag=req.use_rag,
+            enable_dynamic_dropoff=req.enable_dynamic_dropoff,
+            enable_graph_expansion=req.enable_graph_expansion,
+            temperature=req.temperature,
         )
 
         questions = parse_ai_output(council_result.get("final_output", ""))
@@ -630,6 +660,7 @@ async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
             source_text=source_chunks,
             is_rag=bool(req.use_rag),
             generated_count=generated_count,
+            generation_time_ms=round((time.time() - start_time) * 1000, 2),
         )
 
         saved_ids = store.save_batch(req, enriched, chunk_text=(source_chunks.get("topic_chunk") or "") + ("\n\n" + source_chunks.get("theme_chunk") if source_chunks.get("theme_chunk") else ""), chunk_meta=source_meta)
@@ -650,6 +681,8 @@ async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
             standard=req.standard,
             block=req.block,
             k=DEFAULT_K,
+            enable_dynamic_dropoff=req.enable_dynamic_dropoff,
+            enable_graph_expansion=req.enable_graph_expansion,
         )
 
         if not chunk_text:
@@ -662,7 +695,7 @@ async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
             )
 
     prompt = build_prompt_from_request(req, chunk_text)
-    raw_output = await run_model(model_id, prompt, None, req=req)
+    raw_output = await run_model(model_id, prompt, req=req)
     questions = parse_ai_output(raw_output)
 
     if not questions:
@@ -681,6 +714,7 @@ async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
         source_text=source_text,
         is_rag=bool(req.use_rag),
         generated_count=generated_count,
+        generation_time_ms=round((time.time() - start_time) * 1000, 2),
     )
 
     saved_ids = store.save_batch(req, enriched, chunk_text=chunk_text if req.use_rag else "", chunk_meta=first_meta)
@@ -721,6 +755,7 @@ def get_saved_question(qid: str) -> Dict[str, Any]:
         "chapter": row.get("chapter"),
         "qType": row.get("qtype"),
         "num_questions": req_json.get("num_questions"),
+        "enable_task_keywords": req_json.get("enable_task_keywords", True),
     }
     row["scores"] = row.get("scores") or {"similarity": row.get("similarity"), "alignment_score": row.get("alignment_score")}
     return row

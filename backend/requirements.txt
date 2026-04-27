@@ -3,6 +3,9 @@ fastapi
 uvicorn
 pydantic
 python-dotenv
+requests
+httpx
+urllib3
 
 # --- AI Clients (Cloud) ---
 google-genai
@@ -21,6 +24,8 @@ sentence-transformers
 
 pypdf
 faiss-cpu
+networkx
+pymupdf
 
 python-multipart
 

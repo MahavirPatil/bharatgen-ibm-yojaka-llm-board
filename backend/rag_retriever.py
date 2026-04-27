@@ -1,5 +1,6 @@
 import json
 import os
+import pickle
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -14,6 +15,29 @@ MODEL_NAME = os.getenv("RAG_EMBED_MODEL", "sentence-transformers/paraphrase-mult
 DEFAULT_K = 5
 MIN_CHUNK_WORDS = 5
 MAX_CHUNK_WORDS = 5000
+DEFAULT_MAX_DROPOFF_PCT = 0.20
+DEFAULT_MAX_GRAPH_NEIGHBORS = 6
+
+
+def _detect_text_language(text: str) -> str:
+    """
+    Detect language of text. Returns 'hi' for Hindi (Devanagari), 'en' for English, 'unknown' otherwise.
+    Uses simple heuristic: checks for Unicode ranges.
+    """
+    if not text:
+        return "unknown"
+    
+    devanagari_pattern = re.compile(r"[\u0900-\u097F]")
+    english_pattern = re.compile(r"[A-Za-z]")
+    
+    has_devanagari = bool(devanagari_pattern.search(text))
+    has_english = bool(english_pattern.search(text))
+    
+    if has_devanagari:
+        return "hi"
+    if has_english:
+        return "en"
+    return "unknown"
 
 
 def _extract_block_label_from_text(text: str) -> Optional[str]:
@@ -147,6 +171,7 @@ class MinimalRAGRetriever:
         chapter: Optional[str],
         standard: Optional[str],
         block: Optional[str],
+        language: Optional[str] = None,
         max_candidates: int = 40,
     ) -> List[Dict[str, Any]]:
         filtered_records = self.records
@@ -211,7 +236,28 @@ class MinimalRAGRetriever:
                 f"Chunk/embedding mismatch in {doc_dir}: chunks={len(chunks)}, embeddings={embeddings.shape[0]}"
             )
 
-        payload = {"chunks": chunks, "embeddings": embeddings}
+        graph = None
+        graph_path = doc_dir / "graph.pkl"
+        if graph_path.exists():
+            try:
+                with open(graph_path, "rb") as f:
+                    graph = pickle.load(f)
+            except Exception:
+                graph = None
+
+        chunk_lookup: Dict[str, Dict[str, Any]] = {}
+        for chunk in chunks:
+            if isinstance(chunk, dict):
+                cid = str(chunk.get("chunk_id", "")).strip()
+                if cid:
+                    chunk_lookup[cid] = chunk
+
+        payload = {
+            "chunks": chunks,
+            "embeddings": embeddings,
+            "graph": graph,
+            "chunk_lookup": chunk_lookup,
+        }
         self.cache[doc_id] = payload
         return payload
 
@@ -225,21 +271,151 @@ class MinimalRAGRetriever:
     def _word_count(self, text: str) -> int:
         return len((text or "").split())
 
+    def _filter_results_by_language(
+        self,
+        ranked: List[Tuple[float, str, Dict[str, Any]]],
+        language: Optional[str],
+    ) -> List[Tuple[float, str, Dict[str, Any]]]:
+        """
+        Filter ranked results by language. If language is specified, keep only chunks matching that language.
+        If language is 'unknown' or not set, return all results.
+        """
+        if not language or language.lower() == "unknown":
+            return ranked
+        
+        target_lang = language.lower()
+        filtered = []
+        
+        for score, text, meta in ranked:
+            detected_lang = _detect_text_language(text)
+            if detected_lang == target_lang or detected_lang == "unknown":
+                filtered.append((score, text, meta))
+        
+        return filtered if filtered else ranked  # If filtering removes everything, return original
+
+    def _apply_dynamic_dropoff(
+        self,
+        ranked: List[Tuple[float, str, Dict[str, Any]]],
+        max_drop_pct: float = DEFAULT_MAX_DROPOFF_PCT,
+    ) -> List[Tuple[float, str, Dict[str, Any]]]:
+        if not ranked:
+            return ranked
+
+        safe_drop_pct = min(max(float(max_drop_pct), 0.0), 0.95)
+        best_score = ranked[0][0]
+        if best_score <= 0:
+            return ranked[:1]
+
+        filtered: List[Tuple[float, str, Dict[str, Any]]] = []
+        for item in ranked:
+            score = item[0]
+            drop_pct = (best_score - score) / best_score
+            if drop_pct > safe_drop_pct and filtered:
+                break
+            filtered.append(item)
+        return filtered
+
+    def _expand_context_with_graph(
+        self,
+        base_text: str,
+        meta: Dict[str, Any],
+        max_neighbors: int = DEFAULT_MAX_GRAPH_NEIGHBORS,
+    ) -> Tuple[str, int]:
+        doc_id = str(meta.get("doc_id", "")).strip()
+        chunk_id = str(meta.get("chunk_id", "")).strip()
+        if not doc_id or not chunk_id:
+            return base_text, 0
+
+        payload = self.cache.get(doc_id)
+        if not payload:
+            return base_text, 0
+
+        graph = payload.get("graph")
+        chunk_lookup = payload.get("chunk_lookup") or {}
+        if graph is None or chunk_id not in graph:
+            return base_text, 0
+
+        neighbors_text: List[str] = []
+        seen_ids = {chunk_id}
+
+        def _append_neighbor(neighbor_id: str, label: str) -> None:
+            if len(neighbors_text) >= max_neighbors:
+                return
+            n_id = str(neighbor_id)
+            if not n_id or n_id in seen_ids:
+                return
+            seen_ids.add(n_id)
+            n_chunk = chunk_lookup.get(n_id)
+            if not isinstance(n_chunk, dict):
+                return
+            n_text = self._chunk_text(n_chunk).strip()
+            wc = self._word_count(n_text)
+            if wc <= MIN_CHUNK_WORDS:
+                return
+            title = str(n_chunk.get("title") or "Untitled")
+            neighbors_text.append(f"[{label}: {title}]\n{n_text}")
+
+        try:
+            if hasattr(graph, "is_directed") and graph.is_directed():
+                for p_id in list(graph.predecessors(chunk_id)):
+                    _append_neighbor(p_id, "Broader Context / Parent")
+                for c_id in list(graph.successors(chunk_id)):
+                    _append_neighbor(c_id, "Deeper Detail / Child")
+            else:
+                for n_id in list(graph.neighbors(chunk_id)):
+                    _append_neighbor(n_id, "Related Context")
+        except Exception:
+            return base_text, 0
+
+        if not neighbors_text:
+            return base_text, 0
+
+        expanded = (
+            f"{base_text}\n\n"
+            "--- Graph Context Expansion (Connected Sections) ---\n"
+            f"{'\n\n'.join(neighbors_text)}"
+        )
+        return expanded, len(neighbors_text)
+
     def retrieve(
         self,
         query: str,
-        subject: Optional[str],
-        chapter: Optional[str],
-        standard: Optional[str],
-        block: Optional[str],
+        subject: Optional[str] = None,
+        chapter: Optional[str] = None,
+        standard: Optional[str] = None,
+        block: Optional[str] = None,
+        language: Optional[str] = None,
         k: int = DEFAULT_K,
+        enable_dynamic_dropoff: bool = True,
+        max_drop_pct: float = DEFAULT_MAX_DROPOFF_PCT,
+        enable_graph_expansion: bool = False,
+        max_graph_neighbors: int = DEFAULT_MAX_GRAPH_NEIGHBORS,
     ) -> Tuple[str, List[Dict[str, Any]]]:
+        """
+        Retrieve k chunks matching the query and filters.
+        
+        Args:
+            query: The retrieval query
+            subject: Optional subject/course filter
+            chapter: Optional chapter filter
+            standard: Optional standard filter (not currently used)
+            block: Optional block filter
+            language: Optional language filter ('en', 'hi', or None for all)
+            k: Number of chunks to retrieve
+            enable_dynamic_dropoff: Whether to keep only results near best similarity score
+            max_drop_pct: Allowed drop from best similarity before cutoff
+            enable_graph_expansion: Whether to append parent/child/neighbor chunks from graph
+            max_graph_neighbors: Maximum number of related graph neighbors to append per chosen chunk
+        
+        Returns:
+            Tuple of (combined_text, metadata_list)
+        """
         query = (query or "").strip()
         if not query:
             return "", []
 
         query_vec = self.model.encode([query], normalize_embeddings=True)[0]
-        candidates = self._candidate_records(query, subject, chapter, standard, block)
+        candidates = self._candidate_records(query, subject, chapter, standard, block, language)
 
         ranked: List[Tuple[float, str, Dict[str, Any]]] = []
 
@@ -270,6 +446,7 @@ class MinimalRAGRetriever:
                     "source_path": record["meta"].get("store_path"),
                     "title": chunk.get("title") if isinstance(chunk, dict) else None,
                     "page": chunk.get("page") if isinstance(chunk, dict) else None,
+                    "chunk_id": chunk.get("chunk_id") if isinstance(chunk, dict) else None,
                     "similarity": float(sims[int(idx)]),
                     "word_count": wc,
                 }
@@ -278,8 +455,98 @@ class MinimalRAGRetriever:
         if not ranked:
             return "", []
 
+        # Apply language filtering if specified
+        ranked = self._filter_results_by_language(ranked, language)
+
         ranked.sort(key=lambda item: item[0], reverse=True)
+        if enable_dynamic_dropoff:
+            ranked = self._apply_dynamic_dropoff(ranked, max_drop_pct=max_drop_pct)
+
         chosen = ranked[: max(1, k)]
-        texts = [x[1] for x in chosen]
-        metas = [x[2] for x in chosen]
+        texts: List[str] = []
+        metas: List[Dict[str, Any]] = []
+        for score, text, meta in chosen:
+            item_meta = dict(meta)
+            if enable_graph_expansion:
+                expanded_text, related_count = self._expand_context_with_graph(
+                    base_text=text,
+                    meta=item_meta,
+                    max_neighbors=max_graph_neighbors,
+                )
+                texts.append(expanded_text)
+                item_meta["graph_expanded"] = related_count > 0
+                item_meta["graph_related_count"] = related_count
+            else:
+                texts.append(text)
+                item_meta["graph_expanded"] = False
+                item_meta["graph_related_count"] = 0
+            metas.append(item_meta)
+
         return "\n\n".join(texts), metas
+
+    def retrieve_dual(
+        self,
+        topic_query: str,
+        theme_query: Optional[str] = None,
+        subject: Optional[str] = None,
+        chapter: Optional[str] = None,
+        standard: Optional[str] = None,
+        block: Optional[str] = None,
+        language: Optional[str] = None,
+        k: int = DEFAULT_K,
+        enable_dynamic_dropoff: bool = True,
+        max_drop_pct: float = DEFAULT_MAX_DROPOFF_PCT,
+        enable_graph_expansion: bool = False,
+        max_graph_neighbors: int = DEFAULT_MAX_GRAPH_NEIGHBORS,
+    ) -> Tuple[str, str, List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """
+        Retrieve chunks for both topic and theme (used by council flow).
+        
+        Args:
+            topic_query: Query for topic chunks
+            theme_query: Query for theme chunks (optional, defaults to topic_query)
+            subject: Optional subject/course filter
+            chapter: Optional chapter filter
+            standard: Optional standard filter
+            block: Optional block filter
+            language: Optional language filter
+            k: Number of chunks to retrieve for each query
+            enable_dynamic_dropoff: Whether to keep only results near best similarity score
+            max_drop_pct: Allowed drop from best similarity before cutoff
+            enable_graph_expansion: Whether to append parent/child/neighbor chunks from graph
+            max_graph_neighbors: Maximum number of related graph neighbors to append per chosen chunk
+        
+        Returns:
+            Tuple of (topic_text, theme_text, topic_metadata, theme_metadata)
+        """
+        theme_query = theme_query or topic_query
+        
+        topic_text, topic_meta = self.retrieve(
+            query=topic_query,
+            subject=subject,
+            chapter=chapter,
+            standard=standard,
+            block=block,
+            language=language,
+            k=k,
+            enable_dynamic_dropoff=enable_dynamic_dropoff,
+            max_drop_pct=max_drop_pct,
+            enable_graph_expansion=enable_graph_expansion,
+            max_graph_neighbors=max_graph_neighbors,
+        )
+        
+        theme_text, theme_meta = self.retrieve(
+            query=theme_query,
+            subject=subject,
+            chapter=chapter,
+            standard=standard,
+            block=block,
+            language=language,
+            k=k,
+            enable_dynamic_dropoff=enable_dynamic_dropoff,
+            max_drop_pct=max_drop_pct,
+            enable_graph_expansion=enable_graph_expansion,
+            max_graph_neighbors=max_graph_neighbors,
+        )
+        
+        return topic_text, theme_text, topic_meta, theme_meta

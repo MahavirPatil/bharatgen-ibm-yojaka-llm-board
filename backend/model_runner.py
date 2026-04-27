@@ -38,7 +38,7 @@ def initialize_clients():
                 print(f"Warning: Failed to initialize Groq client: {e}")
                 _groq_client = None
 
-async def run_model(model_id: str, prompt: str, req=None) -> str:
+async def run_model(model_id: str, prompt: str, req=None, temperature: Optional[float] = None) -> str:
     """
     Execute a prompt on a Groq model.
     
@@ -46,6 +46,7 @@ async def run_model(model_id: str, prompt: str, req=None) -> str:
         model_id: Groq model identifier (groq-llama-8b, groq-llama-70b, etc.)
         prompt: The prompt text to send to the model
         req: Optional request object for token budget calculation
+        temperature: Optional explicit temperature override (0.0 to 1.0)
     
     Returns:
         Raw text output from the model
@@ -71,13 +72,26 @@ async def run_model(model_id: str, prompt: str, req=None) -> str:
     max_tokens = get_completion_token_budget(model_id, req=req)
     max_tokens = max(GEN_MIN_OUTPUT_TOKENS, min(max_tokens, hard_cap_tokens))
 
+    temp = 0.7
+    if temperature is not None:
+        try:
+            temp = float(temperature)
+        except Exception:
+            temp = 0.7
+    elif req is not None and hasattr(req, "temperature"):
+        try:
+            temp = float(getattr(req, "temperature"))
+        except Exception:
+            temp = 0.7
+    temp = max(0.0, min(1.0, temp))
+
     loop = asyncio.get_event_loop()
     response = await loop.run_in_executor(
         None,
         lambda: _groq_client.chat.completions.create(
             model=groq_model,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
+            temperature=temp,
             max_tokens=max_tokens
         )
     )

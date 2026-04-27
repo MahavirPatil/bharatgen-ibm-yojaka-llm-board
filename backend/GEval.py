@@ -34,14 +34,12 @@ class GEval:
         is_url = lambda s: all([urlparse(s).scheme, urlparse(s).netloc])
         self.client = Groq(api_key=groq_api_key)
         self.model_name=model
-        print("MODEL NAME : ",model)
         if(is_url(model)):
             self._call_model=self._call_vllm
             self.model = model
         elif('groq' in model):
             self._call_model=self._call_groq
             self.model = groq_id_model_mapping[model]
-            print(self.model)
         else:
             self._call_model=self._call_hf
             self.tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=False)
@@ -148,15 +146,12 @@ Format exactly like this:
             model_output=model_output.strip()
         elif(type(model_output)==dict):
             return model_output
-        print(f"Model output : \"{model_output}\"")
         try:
             probs = json.loads(model_output)
         except Exception as e:
-            print("Json load failed : ",e)
             try:
                 probs = ast.literal_eval(model_output)
             except Exception as e:
-                print("FAILED PROBS : ",model_output,e)
                 return {1:1.0}
         return {int(k): float(v) for k, v in probs.items()}
 
@@ -190,7 +185,6 @@ Format exactly like this:
             answer,
             cot
         )
-        print("Probabilities : ",probabilities)
         return self.compute_weighted_score(probabilities)
 
     # --------------------------------------------------
@@ -200,7 +194,6 @@ Format exactly like this:
         pass 
 
     def _call_groq(self, prompt: str) -> str:
-        print("Here ",self.model)
         completion = self.client.chat.completions.create(
             model=self.model,
             messages=[
@@ -210,7 +203,7 @@ Format exactly like this:
                 }
             ],
             temperature=0.2,
-            max_completion_tokens=1024,
+            max_completion_tokens=256,
             top_p=1,
             stream=True,
             stop=None
@@ -224,7 +217,6 @@ Format exactly like this:
         return model_output.strip()
 
     def _call_vllm(self, prompt: str) -> str:
-        print("Here ")
         data = {
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 2048,

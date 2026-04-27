@@ -2,10 +2,17 @@ from typing import Any
 
 def build_prompt_from_request(req: Any, chunk_text: str) -> str:
     lang = (getattr(req, "language", "en") or "en").lower()
+    enable_task_keywords = bool(getattr(req, "enable_task_keywords", True))
     if lang == "hi":
         lang_rule = "Write all output in Hindi (Devanagari), keeping math/LaTeX unchanged."
     else:
         lang_rule = "Write all output in English."
+
+    task_keywords_instruction = (
+        "4. Give tasks like 'discuss', 'differentiate', 'comment on', 'examine', 'what is the significance', 'explain', etc. where appropriate.\n"
+        if enable_task_keywords
+        else ""
+    )
 
     source_block = ""
     if chunk_text:
@@ -41,6 +48,7 @@ def build_prompt_from_request(req: Any, chunk_text: str) -> str:
         "### INSTRUCTIONS\n"
         "1. Use the Source Material for factual accuracy. Do not hallucinate outside NCERT bounds.\n"
         "2. THE DEPTH IS PARAMOUNT: If the depth is DOK 3, do not provide a DOK 1 recall question even if the text is short.\n"
+        f"{task_keywords_instruction}"
         "3. Use LaTeX for all technical notation (e.g., $H_2O$, $\sin(\theta)$).\n\n"
 
         "### CONSTRAINTS\n"
