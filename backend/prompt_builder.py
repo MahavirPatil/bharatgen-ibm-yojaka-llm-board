@@ -25,6 +25,7 @@ def build_prompt_from_request(req: Any, chunk_text: str) -> str:
         "Act as an expert Academic Assessment Designer specializing in NCERT/CBSE curriculum development. "
         "Your goal is to create questions that move beyond simple memory and test true cognitive depth.\n\n"
 
+        "\n\n### SOURCE MATERIAL (RAG CONTEXT)\n"
         f"{source_block}"
 
         "### GUARDRAILS\n"
@@ -46,6 +47,11 @@ def build_prompt_from_request(req: Any, chunk_text: str) -> str:
         f"- QUANTITY: {req.num_questions}\n\n"
 
         f"- LANGUAGE RULE: {lang_rule}\n"
+        
+        "### INSTRUCTIONS\n"
+        "1. Use the Source Material for factual accuracy. Do not hallucinate outside NCERT bounds.\n"
+        "2. THE DEPTH IS PARAMOUNT: If the depth is DOK 3, do not provide a DOK 1 recall question even if the text is short.\n"
+        "3. Use LaTeX for all technical notation (e.g., $H_2O$, $\sin(\theta)$).\n\n"
 
         "### CONSTRAINTS\n"
         "1. Content must be strictly based on NCERT syllabus standards.\n"
@@ -56,7 +62,7 @@ def build_prompt_from_request(req: Any, chunk_text: str) -> str:
         "6. Use LaTeX for all mathematical formulas and chemical equations (e.g., $E=mc^2$).\n\n"
 
         "### OUTPUT FORMAT (FOLLOW EXACTLY)\n"
-        "Generate each question in the following structure. Repeat this block for every question:\n"
+        "Generate each question in the following structure. Strictly wrap each question and answer pair in these tags (repeat this block for every question:\n"
         "<Question>\n[Question text here. If MCQ, include options A, B, C, D]\n</Question>\n"
         "<Answer>\n[Correct answer with a 2-sentence explanation of the underlying concept]\n</Answer>"
     )
