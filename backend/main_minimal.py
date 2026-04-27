@@ -755,20 +755,17 @@ async def list_course_blocks():
     for course_dir in sorted([p for p in RAG_STORE_DIR.iterdir() if p.is_dir()], key=lambda p: p.name.lower()):
         blocks = []
         
-        # Look directly inside the course folder (or fall back to egyankosh if older data exists)
         search_dirs = [course_dir]
         if (course_dir / "egyankosh").is_dir():
             search_dirs.append(course_dir / "egyankosh")
             
         for search_dir in search_dirs:
             for block_dir in search_dir.iterdir():
-                if block_dir.is_dir():
-                    match = re.search(r"block\s*(\d+)", block_dir.name, re.IGNORECASE)
-                    if match:
-                        blocks.append(f"Block {int(match.group(1))}")
-                    else:
-                        blocks.append(block_dir.name)
+                if block_dir.is_dir() and "block" in block_dir.name.lower():
+                    # Do not truncate the name using regex - keep the full folder name.
+                    blocks.append(block_dir.name)
         
+        # Sort blocks intelligently (Block 1, Block 2, etc.)
         uniq_blocks = sorted(
             set(blocks),
             key=lambda b: (int(re.search(r"\d+", b).group()) if re.search(r"\d+", b) else 10_000, b.lower())
