@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime
 
 try:
-    from .utils.pdf_loader import load_pdf
+    from .pdf_loader import load_pdf
 except ImportError:
     from utils.pdf_loader import load_pdf
 
