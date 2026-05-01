@@ -243,6 +243,81 @@ def _index_single_document(
     return metadata
 
 
+def extract_block_citations(
+    pages: List[str], 
+    block_dir: Path, 
+    block_label: str, 
+    pdf_name: str, 
+    unit_name: str = "Unknown/Full Document"
+) -> None:
+    """
+    Extracts pages containing citation markers and saves them to citations.json 
+    within the block directory.
+    """
+    # Group 1: Complex citations -> Preceded by ^ or \n. Contains letters. Ends in numbers.
+    # Group 2: Standard citations -> Optional p./pp. followed by numbers. Allowed anywhere.
+    citation_pattern = re.compile(
+        r'(?:^|\n)\s*(\(\s*[^)]*[a-z][^)]*\d[\d\s\-,]*\s*\))|(\(\s*(?:p\.?|pp\.?)?\s*[\d\s\-,]+\s*\))', 
+        re.IGNORECASE
+    )
+    
+    extracted_citations = []
+    
+    for page_num, page_text in enumerate(pages):
+        valid_matches = []
+        
+        for match in citation_pattern.finditer(page_text):
+            raw_match = match.group(1) or match.group(2)
+            
+            if raw_match:
+                raw_match = raw_match.strip()
+                inner_content = raw_match.strip('() \t\n\r') # The text inside the parentheses
+                
+                # 1. Enforce length rule (max 50 characters)
+                if len(raw_match) > 50:
+                    continue
+                    
+                # 2. Exclude if it contains "reprinted" anywhere inside
+                if 'reprinted' in raw_match.lower():
+                    continue
+                    
+                # 3. Exclude if it is EXACTLY a 4-digit number starting with 19 or 20.
+                #    (e.g., "(1999)" will be dropped, but "(p. 1999)" will be kept)
+                if re.match(r'^(?:19|20)\d{2}$', inner_content):
+                    continue
+                    
+                valid_matches.append(raw_match)
+        
+        # 4. Enforce the limit: Only save if > 0 AND <= 15 citations
+        if 0 < len(valid_matches) <= 15:
+            extracted_citations.append({
+                "block_name": block_label,
+                "unit_name": unit_name,
+                "source_pdf": pdf_name,
+                "pdf_page": page_num + 1,  # 1-indexed for readability
+                "citations_count": len(valid_matches),
+                "matched_markers": valid_matches,
+                "citation_text": page_text.strip()
+            })
+    
+    if extracted_citations:
+        citations_file = block_dir / "citations.json"
+        
+        if citations_file.exists():
+            try:
+                with open(citations_file, 'r', encoding='utf-8') as f:
+                    existing_data = json.load(f)
+            except json.JSONDecodeError:
+                existing_data = []
+            existing_data.extend(extracted_citations)
+        else:
+            existing_data = extracted_citations
+            
+        with open(citations_file, 'w', encoding='utf-8') as f:
+            json.dump(existing_data, f, indent=2, ensure_ascii=False)
+            
+        logger.info(f"✓ Extracted {len(extracted_citations)} citation pages to {citations_file.name}")
+        
 def process_single_pdf(
     pdf_path: Path,
     output_dir: Path,
@@ -265,6 +340,13 @@ def process_single_pdf(
         block_label = _extract_block_label(pdf_path.stem, full_text)
         block_output_dir = output_dir / block_label
         block_output_dir.mkdir(parents=True, exist_ok=True)
+        
+        extract_block_citations(
+            pages=pages,
+            block_dir=block_output_dir,
+            block_label=block_label,
+            pdf_name=pdf_path.name
+        )
 
         chunker = HierarchicalChunker()
         if split_by_unit:
