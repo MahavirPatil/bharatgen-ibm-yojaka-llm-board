@@ -22,14 +22,14 @@ try:
     from .GEval import GEval
     from .model_runner import run_model, set_clients
     from .council import run_council_flow
-    from .prompt_builder import build_prompt_from_request
+    from .prompt_builder import build_prompt_from_request, get_generation_question_count
 except ImportError:
     from rag_retriever import MAX_CHUNK_WORDS, MIN_CHUNK_WORDS, MinimalRAGRetriever
     from parse_ai_output import parse_ai_output
     from GEval import GEval
     from model_runner import run_model, set_clients
     from council import run_council_flow
-    from prompt_builder import build_prompt_from_request
+    from prompt_builder import build_prompt_from_request, get_generation_question_count
 
 
 load_dotenv()
@@ -303,6 +303,7 @@ class QuestionStore:
                     source_text_json TEXT,
                     source_meta_json TEXT,
                     board_metadata_json TEXT,
+                    rubric_json TEXT,
                     type_match INTEGER,
                     type_match_reason TEXT,
                     is_rag INTEGER DEFAULT 0
@@ -320,6 +321,7 @@ class QuestionStore:
             "source_text_json": "TEXT",
             "source_meta_json": "TEXT",
             "board_metadata_json": "TEXT",
+            "rubric_json": "TEXT",
             "type_match": "INTEGER",
             "type_match_reason": "TEXT",
             "is_rag": "INTEGER DEFAULT 0",
@@ -348,6 +350,7 @@ class QuestionStore:
                     source_text = qa.get("source_text")
                     source_meta = qa.get("source_meta")
                     board_metadata = qa.get("board_metadata")
+                    rubric = qa.get("rubric")
                     scores = qa.get("scores")
                     type_match = qa.get("type_match")
                     type_match_reason = qa.get("type_match_reason")
@@ -356,9 +359,9 @@ class QuestionStore:
                         INSERT INTO generated_questions (
                             id, created_at, model_id, subject, chapter, standard, theme, qtype, depth, language,
                             request_json, question, answer, chunk_text, chunk_source, similarity,
-                            alignment_score, scores_json, source_text_json, source_meta_json, board_metadata_json,
+                            alignment_score, scores_json, source_text_json, source_meta_json, board_metadata_json, rubric_json,
                             type_match, type_match_reason, is_rag
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             row_id,
@@ -382,6 +385,7 @@ class QuestionStore:
                             json.dumps(source_text, ensure_ascii=False) if source_text is not None else None,
                             json.dumps(source_meta, ensure_ascii=False) if source_meta is not None else None,
                             json.dumps(board_metadata, ensure_ascii=False) if board_metadata is not None else None,
+                            json.dumps(rubric, ensure_ascii=False) if rubric is not None else None,
                             (1 if type_match else 0) if type_match is not None else None,
                             type_match_reason,
                             1 if qa.get("is_rag") else 0,
@@ -417,7 +421,7 @@ class QuestionStore:
             return None
 
         data = dict(row)
-        for key in ("scores_json", "source_text_json", "source_meta_json", "board_metadata_json"):
+        for key in ("scores_json", "source_text_json", "source_meta_json", "board_metadata_json", "rubric_json"):
             if data.get(key):
                 try:
                     data[key.replace("_json", "")] = json.loads(data[key])
@@ -511,6 +515,7 @@ async def _score_and_enrich_questions(
     source_text: Optional[Dict[str, Any]] = None,
     is_rag: bool = False,
     generated_count: Optional[int] = None,
+    requested_count: Optional[int] = None,
     generation_time_ms: Optional[float] = None,
 ) -> List[Dict[str, Any]]:
     enriched: List[Dict[str, Any]] = []
@@ -557,9 +562,9 @@ async def _score_and_enrich_questions(
         }
         item["type_match"] = type_check["type_match"]
         item["type_match_reason"] = type_check["type_match_reason"]
-        item["requested_count"] = req.num_questions
+        item["requested_count"] = requested_count if requested_count is not None else req.num_questions
         item["generated_count"] = generated_count if generated_count is not None else len(questions)
-        item["count_warning"] = item["generated_count"] < req.num_questions
+        item["count_warning"] = item["generated_count"] < item["requested_count"]
         item["timestamp"] = timestamp
         if generation_time_ms is not None:
             item["generation_time_ms"] = generation_time_ms
@@ -623,7 +628,7 @@ async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
             theme=req.theme,
             qType=req.qType,
             depth=req.depth,
-            num_questions=req.num_questions,
+            num_questions=get_generation_question_count(req.depth, req.num_questions),
             use_rag=req.use_rag,
             enable_dynamic_dropoff=req.enable_dynamic_dropoff,
             enable_graph_expansion=req.enable_graph_expansion,
@@ -639,7 +644,8 @@ async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
         if not questions:
             raise HTTPException(status_code=500, detail="Council flow completed but no parsable questions were produced.")
 
-        questions = questions[: req.num_questions]
+        requested_count = get_generation_question_count(req.depth, req.num_questions)
+        questions = questions[: requested_count]
         generated_count = len(questions)
         source_chunks = council_result.get("source_chunks") or {"topic_chunk": "", "theme_chunk": ""}
         source_meta = council_result.get("source_meta") or {}
@@ -660,6 +666,7 @@ async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
             source_text=source_chunks,
             is_rag=bool(req.use_rag),
             generated_count=generated_count,
+            requested_count=get_generation_question_count(req.depth, req.num_questions),
             generation_time_ms=round((time.time() - start_time) * 1000, 2),
         )
 
@@ -701,7 +708,8 @@ async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
     if not questions:
         questions = [{"question": raw_output.strip(), "answer": ""}]
 
-    questions = questions[: req.num_questions]
+    requested_count = get_generation_question_count(req.depth, req.num_questions)
+    questions = questions[: requested_count]
     generated_count = len(questions)
     first_meta = metas[0] if metas else None
     source_text = {"topic_chunk": chunk_text, "theme_chunk": ""} if req.use_rag else {"topic_chunk": "", "theme_chunk": ""}
@@ -714,6 +722,7 @@ async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
         source_text=source_text,
         is_rag=bool(req.use_rag),
         generated_count=generated_count,
+        requested_count=requested_count,
         generation_time_ms=round((time.time() - start_time) * 1000, 2),
     )
 

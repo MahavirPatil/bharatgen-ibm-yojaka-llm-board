@@ -11,10 +11,12 @@ from typing import List, Dict, Optional, Tuple
 try:
     from .model_runner import run_model
     from .rag_retriever import MinimalRAGRetriever
+    from .prompt_builder import get_generation_question_count, is_bloom_level_2
 
 except ImportError:
     from model_runner import run_model
     from rag_retriever import MinimalRAGRetriever
+    from prompt_builder import get_generation_question_count, is_bloom_level_2
 
 
 def build_member_generate_one_prompt(subject: str, chapter: str, theme: str, qType: str,
@@ -75,6 +77,7 @@ def build_chairman_proposal_prompt(subject: str, chapter: str, theme: str, qType
                                    theme_chunk: str = None) -> str:
     """Build the prompt for the chairman's initial proposal."""
     lang = (language or "en").lower()
+    question_count = get_generation_question_count(depth, num_questions)
     if lang == "hi":
         lang_block = (
             "### OUTPUT LANGUAGE (CRITICAL — FOLLOW STRICTLY)\n"
@@ -95,6 +98,51 @@ def build_chairman_proposal_prompt(subject: str, chapter: str, theme: str, qType
             f"{topic_chunk}\n\n"
         )
     
+    if is_bloom_level_2(depth):
+        prompt = (
+        f"{lang_block}"
+        "### ROLE\n"
+        "You are the Chairman of an LLM Board responsible for generating high-quality academic assessment questions. "
+        "Your role is to propose initial question drafts that will be reviewed by board members.\n\n"
+        "### COGNITIVE DEPTH CONTEXT (Bloom's Taxonomy x DOK)\n"
+        "You must adhere to the following definitions for the requested DEPTH:\n"
+        "- DOK 1 (Recall/Remember): Recall of a fact, term, or property. (e.g., Define, List, State)\n"
+        "- DOK 2 (Skills & Concepts/Understand & Apply): Use of information or conceptual knowledge. (e.g., Describe, Classify, Solve routine problems)\n"
+        "- DOK 3 (Strategic Thinking/Analyze & Evaluate): Reasoning, planning, and using evidence. (e.g., Explain why, Non-routine problem solving, Compare/Contrast phenomena)\n"
+        "- DOK 4 (Extended Thinking/Create): Complex synthesis and connection across chapters. (e.g., Create a model, Design an experiment, Critique a theoretical framework)\n\n"
+        "### PARAMETERS\n"
+        f"- SUBJECT: {subject}\n"
+        f"- CHAPTER: {chapter}\n"
+        f"- THEME: {theme}\n"
+        f"- QUESTION TYPE: {qType}\n"
+        f"- TARGET DEPTH: {depth}\n"
+        f"- QUANTITY: {question_count}\n"
+        f"{rag_context}"
+        "### CONSTRAINTS\n"
+        "1. Content must be strictly based on NCERT syllabus standards.\n"
+        "2. Questions must demonstrate Bloom level 2 understanding or application, not simple recall.\n"
+        "3. Distractors for MCQs must be 'Common Misconceptions'—they should look correct to a student who has not understood the core concept.\n"
+        "4. For numericals, provide a step-by-step logical breakdown in the Answer section.\n"
+        "5. Use LaTeX for all mathematical formulas and chemical equations (e.g., $E=mc^2$).\n\n"
+        f"{lang_reminder}"
+        "### OUTPUT FORMAT (STRICT JSON ONLY)\n"
+        "Return a JSON array with exactly 2 objects. Each object must contain question, answer, and rubric fields.\n"
+        "rubric must include answer, marks, and key_points. The marks entries must sum to 10.\n"
+        "Schema:\n"
+        "[\n"
+        "  {\n"
+        '    "question": "...",\n'
+        '    "answer": "...",\n'
+        '    "rubric": {\n'
+        '      "answer": "...",\n'
+        '      "marks": [{"criterion": "...", "marks": 2}],\n'
+        '      "key_points": ["...", "..."]\n'
+        "    }\n"
+        "  }\n"
+        "]"
+        )
+        return prompt
+
     prompt = (
         f"{lang_block}"
         "### ROLE\n"
@@ -114,7 +162,7 @@ def build_chairman_proposal_prompt(subject: str, chapter: str, theme: str, qType
         f"- THEME: {theme}\n"
         f"- QUESTION TYPE: {qType}\n"
         f"- TARGET DEPTH: {depth}\n"
-        f"- QUANTITY: {num_questions}\n"
+        f"- QUANTITY: {question_count}\n"
         f"{rag_context}"
         
         "### CONSTRAINTS\n"
@@ -202,6 +250,7 @@ def build_chairman_synthesis_prompt(subject: str, chapter: str, theme: str, qTyp
                                      topic_chunk: str = None, theme_chunk: str = None) -> str:
     """Build the prompt for the chairman to synthesize final questions based on member feedback."""
     lang = (language or "en").lower()
+    question_count = get_generation_question_count(depth, 2)
     if lang == "hi":
         lang_block = (
             "### OUTPUT LANGUAGE (CRITICAL — FOLLOW STRICTLY)\n"
@@ -232,6 +281,47 @@ def build_chairman_synthesis_prompt(subject: str, chapter: str, theme: str, qTyp
         if review.get('alternative') and review['alternative'].lower() != 'none':
             reviews_text += f"Alternative Suggestion: {review['alternative']}\n"
     
+    if is_bloom_level_2(depth):
+        prompt = (
+        f"{lang_block}"
+        "### ROLE\n"
+        "You are the Chairman of an LLM Board. You have received feedback from board members on your initial proposal. "
+        "Your task is to synthesize the best possible final question(s) based on this collective input.\n\n"
+        "### CONTEXT\n"
+        f"- SUBJECT: {subject}\n"
+        f"- CHAPTER: {chapter}\n"
+        f"- THEME: {theme}\n"
+        f"- QUESTION TYPE: {qType}\n"
+        f"- TARGET DEPTH: {depth}\n"
+        f"{rag_context}"
+        "### YOUR ORIGINAL PROPOSAL\n"
+        f"{original_proposal}\n\n"
+        "### BOARD MEMBER REVIEWS\n"
+        f"{reviews_text}\n\n"
+        "### YOUR TASK\n"
+        "1. Consider all feedback from board members.\n"
+        "2. Synthesize the best possible question(s) that incorporates valid suggestions.\n"
+        "3. Ensure the final question(s) meet all requirements (depth, accuracy, format).\n"
+        "4. If multiple members suggested improvements, integrate the best elements.\n\n"
+        f"{lang_reminder}"
+        "### OUTPUT FORMAT (STRICT JSON ONLY)\n"
+        f"Return a JSON array with exactly {question_count} objects. Each object must contain question, answer, and rubric fields.\n"
+        "rubric must include answer, marks, and key_points. The marks entries must sum to 10.\n"
+        "Schema:\n"
+        "[\n"
+        "  {\n"
+        '    "question": "...",\n'
+        '    "answer": "...",\n'
+        '    "rubric": {\n'
+        '      "answer": "...",\n'
+        '      "marks": [{"criterion": "...", "marks": 2}],\n'
+        '      "key_points": ["...", "..."]\n'
+        "    }\n"
+        "  }\n"
+        "]"
+        )
+        return prompt
+
     prompt = (
         f"{lang_block}"
         "### ROLE\n"

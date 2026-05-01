@@ -266,6 +266,16 @@
             color: var(--text-primary);
         }
 
+        .rubric-panel {
+            border-color: rgba(16, 185, 129, 0.25);
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.03));
+        }
+
+        .rubric-mark {
+            border: 1px solid var(--border-light);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
         /* logo*/
         /* Base logo styling */
         .logo-img {
@@ -702,6 +712,15 @@
                     <div id="qContent" class="question-text text-xl md:text-2xl font-medium"
                         style="color: var(--text-primary);">
                         ...
+                    </div>
+                    <div id="rubricSection" class="hidden rubric-panel mt-6 rounded-3xl border p-6 md:p-7">
+                        <div class="flex items-center justify-between gap-4 mb-4">
+                            <div class="text-xs font-black uppercase tracking-widest" style="color: var(--accent-secondary);">
+                                RUBRIC
+                            </div>
+                            <div id="rubricScoreSummary" class="text-xs font-bold" style="color: var(--text-secondary);"></div>
+                        </div>
+                        <div id="rubricContent" class="space-y-4 text-sm leading-relaxed" style="color: var(--text-secondary);"></div>
                     </div>
                 </div>
 
@@ -1528,6 +1547,92 @@ renderQuestionTypes();
             el.innerText = 'Type Check: Not available for this question.';
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatRubricList(items) {
+            if (!Array.isArray(items) || items.length === 0) return '';
+
+            return items.map(item => {
+                if (item && typeof item === 'object' && !Array.isArray(item)) {
+                    const criterion = escapeHtml(item.criterion || item.label || item.name || 'Criterion');
+                    const marks = escapeHtml(item.marks ?? item.score ?? item.value ?? '');
+                    return `
+                        <div class="rubric-mark rounded-2xl p-4 flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <div class="font-semibold text-sm" style="color: var(--text-primary);">${criterion}</div>
+                            </div>
+                            <div class="text-xs font-black tracking-widest shrink-0" style="color: var(--accent-secondary);">${marks}</div>
+                        </div>
+                    `;
+                }
+                return `
+                    <div class="rubric-mark rounded-2xl p-4 text-sm" style="color: var(--text-primary);">
+                        ${escapeHtml(item)}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderRubric(rubric, mainAnswer) {
+            const rubricSection = document.getElementById('rubricSection');
+            const rubricContent = document.getElementById('rubricContent');
+            const rubricScoreSummary = document.getElementById('rubricScoreSummary');
+
+            if (!rubricSection || !rubricContent || !rubricScoreSummary) return;
+
+            if (!rubric || typeof rubric !== 'object') {
+                rubricSection.classList.add('hidden');
+                rubricContent.innerHTML = '';
+                rubricScoreSummary.innerText = '';
+                return;
+            }
+
+            const marks = Array.isArray(rubric.marks) ? rubric.marks : [];
+            const totalMarks = marks.reduce((sum, item) => {
+                const value = Number(item && typeof item === 'object' ? (item.marks ?? item.score ?? item.value ?? 0) : 0);
+                return sum + (Number.isFinite(value) ? value : 0);
+            }, 0);
+            const declaredTotal = Number(rubric.total_marks ?? rubric.totalMarks ?? 0);
+            const displayTotal = declaredTotal || totalMarks || 10;
+
+            const keyPoints = Array.isArray(rubric.key_points) ? rubric.key_points : [];
+            const answerText = mainAnswer ? mainAnswer : '';
+
+            rubricSection.classList.remove('hidden');
+            rubricScoreSummary.innerText = `Teacher rubric total: ${displayTotal} marks`;
+            rubricContent.innerHTML = `
+                ${answerText ? `
+                    <div class="rubric-mark rounded-2xl p-4">
+                        <div class="text-[11px] font-black uppercase tracking-widest mb-2" style="color: var(--text-muted);">Suggested answer</div>
+                        <div style="color: var(--text-primary); white-space: pre-wrap;">${marked.parse(answerText)}</div>
+                    </div>
+                ` : ''}
+
+                ${marks.length ? `
+                    <div>
+                        <div class="text-[11px] font-black uppercase tracking-widest mb-3" style="color: var(--text-muted);">Marking points</div>
+                        <div class="space-y-3">${formatRubricList(marks)}</div>
+                    </div>
+                ` : ''}
+
+                ${keyPoints.length ? `
+                    <div>
+                        <div class="text-[11px] font-black uppercase tracking-widest mb-3" style="color: var(--text-muted);">Key points</div>
+                        <div class="flex flex-wrap gap-2">
+                            ${keyPoints.map(point => `<span class="px-3 py-2 rounded-full text-xs font-semibold rubric-mark" style="color: var(--text-primary);">${escapeHtml(point)}</span>`).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
         async function startSession() {
             const btn = document.getElementById('genBtn');
             const theme = "general";
@@ -1748,7 +1853,8 @@ ${activeLanguage === 'hi' ? 'सभी' : 'ALL'}
             renderTypeMatchStatus(q);
 
             document.getElementById('qContent').innerHTML = marked.parse(q.question || "");
-        document.getElementById('aContent').innerHTML = marked.parse(q.answer || "");
+            renderRubric(q.rubric || null, q.answer || "");
+            document.getElementById('aContent').innerHTML = marked.parse(q.rubric?.answer || "");
 
             document.getElementById('aContent').classList.add('hidden');
             document.getElementById('progressBar').innerText =

@@ -240,6 +240,20 @@ h2 {
     white-space: pre-wrap;
 }
 
+.rubric-box {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+    background: #f8fffb;
+}
+
+.rubric-item {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #fff;
+}
+
 @media (max-width: 700px) {
     body { padding: 14px; }
     .shell { padding: 14px; }
@@ -377,6 +391,73 @@ function normalizeBoardMetadata(q) {
     return null;
 }
 
+function normalizeRubric(q) {
+    if (q.rubric && typeof q.rubric === 'object') return q.rubric;
+    if (q.rubric_json) {
+        try { return JSON.parse(q.rubric_json); } catch { return null; }
+    }
+    return null;
+}
+
+function renderRubric(rubric, mainAnswer) {
+    if (!rubric || typeof rubric !== 'object') {
+        return '<div style="color:#64748b;font-size:13px;">No rubric available.</div>';
+    }
+
+    const marks = Array.isArray(rubric.marks) ? rubric.marks : [];
+    const keyPoints = Array.isArray(rubric.key_points) ? rubric.key_points : [];
+    const totalMarks = marks.reduce((sum, item) => {
+        if (item && typeof item === 'object') {
+            const value = Number(item.marks ?? item.score ?? item.value ?? 0);
+            return sum + (Number.isFinite(value) ? value : 0);
+        }
+        return sum;
+    }, 0) || Number(rubric.total_marks ?? rubric.totalMarks ?? 10);
+
+    const answerHtml = mainAnswer 
+        ? `<div class="rubric-item" style="margin-bottom:10px;"><b>Suggested answer</b><div style="margin-top:5px;">${esc(mainAnswer)}</div></div>`
+        : '';
+
+    const marksHtml = marks.length
+        ? marks.map((item, idx) => {
+            if (item && typeof item === 'object') {
+                return `
+                    <div class="rubric-item">
+                        <div class="member-head" style="margin-bottom:0;">
+                            <strong>${esc(item.criterion || item.label || item.name || `Criterion ${idx + 1}`)}</strong>
+                            <span>${esc(item.marks ?? item.score ?? item.value ?? '')}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            return `<div class="rubric-item">${esc(item)}</div>`;
+        }).join('')
+        : '<div style="color:#64748b;font-size:13px;">No marking breakdown supplied.</div>';
+
+    const keyPointsHtml = keyPoints.length
+        ? `<div class="grid" style="margin-top:10px;">${keyPoints.map(point => `
+            <div class="kv"><b>Key point</b><span>${esc(point)}</span></div>
+        `).join('')}</div>`
+        : '<div style="color:#64748b;font-size:13px;">No key points supplied.</div>';
+
+    return `
+        <div class="rubric-box">
+            ${answerHtml}
+            <div class="member-head" style="margin-bottom:10px;">
+                <strong>Teacher Rubric</strong>
+                <span>Total: ${esc(totalMarks)} marks</span>
+            </div>
+            <div style="margin-bottom:12px; font-size:13px; color:#334155; white-space: pre-wrap;">
+                ${esc(rubric.answer || 'No suggested answer supplied.')}
+            </div>
+            <div style="font-size:12px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:#64748b; margin-bottom:8px;">Marking breakdown</div>
+            <div style="display:grid; gap:8px;">${marksHtml}</div>
+            <div style="font-size:12px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:#64748b; margin:12px 0 8px;">Key points</div>
+            ${keyPointsHtml}
+        </div>
+    `;
+}
+
 function renderMemberOpinions(opinions) {
     if (!Array.isArray(opinions) || !opinions.length) {
         return '<div style="color:#64748b;font-size:13px;">No member reviews captured.</div>';
@@ -431,6 +512,7 @@ async function openDetail(id) {
     const score = q.alignment_score;
     const scores = q.scores || null;
     const board = normalizeBoardMetadata(q);
+    const rubric = normalizeRubric(q);
 
     modalBody.innerHTML = `
         <h3 style="margin:0 0 8px;font-size:20px;">Question Detail</h3>
@@ -446,8 +528,13 @@ async function openDetail(id) {
         </div>
 
         <div class="section">
+            <h4>Rubric</h4>
+            ${renderRubric(rubric, q.answer)}
+        </div>
+
+        <div class="section">
             <h4>Answer</h4>
-            <div class="qa">${esc(q.answer)}</div>
+            <div class="qa">${esc(q.rubric?.answer || q.answer || 'No rubric answer available')}</div>
         </div>
 
         <div class="section">
