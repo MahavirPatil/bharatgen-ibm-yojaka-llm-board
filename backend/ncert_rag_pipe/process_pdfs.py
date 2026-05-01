@@ -146,7 +146,6 @@ def _post_process_chunks(chunks, min_words: int = 12):
             continue
         seen_title_text.add(dedup_key)
 
-        # FIX: Removed `or numeric_only_re.match(title) is not None`
         # A numeric title is fine as long as the chunk has actual text > min_words
         is_low_value = (
             wc < min_words
@@ -242,6 +241,35 @@ def _index_single_document(
     logger.info(f"✓ Saved {len(chunks)} cleaned chunks to {doc_dir}/")
     return metadata
 
+
+def save_raw_extracted_text(
+    pages: List[str],
+    full_text: str,
+    block_dir: Path,
+    pdf_name: str
+) -> None:
+    """
+    Saves the raw extracted text (both full text and page-by-page) into a JSON file 
+    within the block directory for future reuse.
+    """
+    # Create a safe filename based on the source PDF
+    safe_stem = Path(pdf_name).stem.replace(" ", "_")
+    output_file = block_dir / f"{safe_stem}_raw_text.json"
+    
+    data = {
+        "source_pdf": pdf_name,
+        "extracted_at": datetime.now().isoformat(),
+        "total_pages": len(pages),
+        "full_text": full_text,
+        # Storing pages as a dictionary with 1-indexed page numbers for easy reference
+        "pages": {str(i + 1): page_text for i, page_text in enumerate(pages)}
+    }
+    
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        
+    logger.info(f"✓ Saved raw text for {pdf_name} to {output_file.name}")
+    
 
 def extract_block_citations(
     pages: List[str], 
@@ -340,6 +368,13 @@ def process_single_pdf(
         block_label = _extract_block_label(pdf_path.stem, full_text)
         block_output_dir = output_dir / block_label
         block_output_dir.mkdir(parents=True, exist_ok=True)
+        
+        save_raw_extracted_text(
+            pages=pages,
+            full_text=full_text,
+            block_dir=block_output_dir,
+            pdf_name=pdf_path.name
+        )
         
         extract_block_citations(
             pages=pages,
