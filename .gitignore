@@ -26,6 +26,7 @@ indexed_for_RAG/
 CHECK_rag_store_books/
 draft_RAG/
 testing/
+books/
 *.log
 *.db
 
