@@ -39,10 +39,13 @@ def build_prompt_from_request(req: Any, chunk_text: str) -> str:
     if use_citation:
         citation_instructions = (
             "### CITATION-BASED MODE (ENFORCE)\n"
-            "If citation-based mode is active: you MUST select exactly one verbatim quote from the SOURCE MATERIAL that directly supports the correct answer. "
-            "In the `answer` field, first provide the correct answer, then on a new line include a single citation block prefixed with 'Citation: ' followed by the verbatim quote. "
+            "You will be provided either a direct citation or a page from the learning material which includes one or more citations. A citation is such text that comes from the original work, like a dialog from the Oedipus tragedy."
+            "If you get a page with several citations mixed with the educational/explanational material, recognize which parts are the proper citations."
+            "You MUST select exactly one verbatim citation from the SOURCE MATERIAL. Make sure this one citation is from its beggining to end, despite possible inconsisted formatting and other processing errors. Critically evaluate the provided material to decide what is the proper citation. Dialogues can span multiple speakers and poems may have a lot of verses, etc."
+            "Provide the correct answer in the `answer` field, and provide the verbatim quote in the `citation` field. "
             "Remove any parenthetical citation markers from the quoted text (e.g., remove '(p. 175)' or '(Rajan, 29)'). "
-            "Do NOT include multiple quotes or additional citation metadata. Ensure the quoted text is directly supporting the answer.\n\n"
+            "Do NOT include literal line breaks or newlines inside your JSON strings. Ensure the quoted text is directly supporting the answer."
+            "The answer should show understanding of the citation content.\n\n"
         )
 
     if is_bloom_level_2(depth):
@@ -91,6 +94,7 @@ def build_prompt_from_request(req: Any, chunk_text: str) -> str:
             "  {\n"
             '    "question": "...",\n'
             '    "answer": "...",\n'
+            '    "citation": "...",\n'
             '    "rubric": {\n'
             '      "answer": "...",\n'
             '      "marks": [\n'

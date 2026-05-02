@@ -328,6 +328,7 @@ class QuestionStore:
             "type_match_reason": "TEXT",
             "is_rag": "INTEGER DEFAULT 0",
             "use_citation": "INTEGER DEFAULT 0",
+            "citation": "TEXT",
         }
         for column_name, column_type in required.items():
             if column_name not in existing:
@@ -363,8 +364,8 @@ class QuestionStore:
                             id, created_at, model_id, subject, chapter, standard, theme, qtype, depth, language,
                             request_json, question, answer, chunk_text, chunk_source, similarity,
                             alignment_score, scores_json, source_text_json, source_meta_json, board_metadata_json, rubric_json,
-                            type_match, type_match_reason, is_rag, use_citation
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            type_match, type_match_reason, is_rag, use_citation, citation
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             row_id,
@@ -393,6 +394,7 @@ class QuestionStore:
                             type_match_reason,
                             1 if qa.get("is_rag") else 0,
                             1 if getattr(req, "use_citation", False) else 0,
+                            qa.get("citation"),
                         ),
                     )
                 conn.commit()
@@ -405,7 +407,7 @@ class QuestionStore:
             rows = conn.execute(
                 """
                   SELECT id, created_at, model_id, subject, chapter, qtype, question, similarity, alignment_score,
-                      type_match, type_match_reason, is_rag, use_citation
+                      type_match, type_match_reason, is_rag, use_citation, citation
                 FROM generated_questions
                 ORDER BY created_at DESC
                 LIMIT ? OFFSET ?

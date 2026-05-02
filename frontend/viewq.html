@@ -90,6 +90,13 @@ h2 {
     text-transform: uppercase;
 }
 
+.table th:nth-child(5),
+.table td:nth-child(5),
+.table th:nth-child(6),
+.table td:nth-child(6) {
+    text-align: center;
+}
+
 .preview {
     max-width: 430px;
     white-space: nowrap;
@@ -112,6 +119,7 @@ h2 {
 .badge.council { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
 .badge.rag { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
 .badge.no-rag { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+.badge.citation { background: #e0e7ff; color: #3730a3; border-color: #c7d2fe; }
 
 .align {
     font-weight: 700;
@@ -277,7 +285,7 @@ h2 {
                     <th>Question</th>
                     <th>Mode</th>
                     <th>RAG</th>
-                    <th>Type Match</th>
+                    <th>Citation Mode</th>
                     <th>Alignment</th>
                     <th>Action</th>
                 </tr>
@@ -335,14 +343,10 @@ function ragBadge(question) {
         : '<span class="badge no-rag">No RAG</span>';
 }
 
-function typeMatchBadge(question) {
-    if (question.type_match === true) {
-        return '<span class="badge rag" title="Matches requested question type">Matched</span>';
-    }
-    if (question.type_match === false) {
-        return '<span class="badge" style="background:#fef2f2;color:#b91c1c;border-color:#fecaca;" title="Does not match requested question type">Mismatch</span>';
-    }
-    return '<span class="badge no-rag">N/A</span>';
+function citationBadge(question) {
+    return question.use_citation
+        ? '<span class="badge citation" title="Citation Mode Enabled">ON</span>'
+        : '<span class="badge no-rag" title="Citation Mode Disabled">OFF</span>';
 }
 
 function scoreColor(value) {
@@ -490,12 +494,13 @@ async function loadMore() {
     data.forEach((q) => {
         const tr = document.createElement('tr');
         const preview = (q.question || '').replace(/\s+/g, ' ').trim();
+
         tr.innerHTML = `
             <td>${serial++}</td>
             <td><div class="preview" title="${esc(preview)}">${esc(preview || 'No question text')}</div></td>
             <td>${modeBadge(q)}</td>
             <td>${ragBadge(q)}</td>
-            <td>${typeMatchBadge(q)}</td>
+            <td>${citationBadge(q)}</td>
             <td>${alignmentCell(q.alignment_score)}</td>
             <td><button class="btn" onclick="openDetail('${q.id}')">View</button></td>
         `;
@@ -519,12 +524,20 @@ async function openDetail(id) {
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
             ${modeBadge(q)}
             ${ragBadge(q)}
+            <span class="badge ${q.use_citation ? 'citation' : 'no-rag'}">Citation: ${q.use_citation ? 'ON' : 'OFF'}</span>
             <span class="badge no-rag">Model: ${esc(q.model_id || 'N/A')}</span>
         </div>
 
         <div class="section">
             <h4>Question</h4>
             <div class="qa">${esc(q.question)}</div>
+        </div>
+
+        <div class="section">
+            <h4>Extracted Citation</h4>
+            <div class="qa" style="font-style: italic; color: #475569; border-left: 3px solid #cbd5e1; padding-left: 12px;">
+                ${q.citation ? `"${esc(q.citation)}"` : '<span style="font-style: normal; font-size: 13px;">No citation extracted for this question.</span>'}
+            </div>
         </div>
 
         <div class="section">
@@ -547,20 +560,6 @@ async function openDetail(id) {
         <div class="section">
             <h4>Evaluation Scores</h4>
             ${renderKVGrid(scores)}
-        </div>
-
-        <div class="section">
-            <h4>Question Type Match</h4>
-            <div class="grid">
-                <div class="kv">
-                    <b>Matched Requested Type</b>
-                    <span>${q.type_match === true ? 'Yes' : (q.type_match === false ? 'No' : 'N/A')}</span>
-                </div>
-                <div class="kv">
-                    <b>Validation Note</b>
-                    <span>${esc(q.type_match_reason || 'No validation note available')}</span>
-                </div>
-            </div>
         </div>
 
         <div class="section">

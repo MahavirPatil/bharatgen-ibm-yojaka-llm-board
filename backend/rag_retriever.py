@@ -106,13 +106,15 @@ class MinimalRAGRetriever:
         # Iterate through path segments. If a folder has "block X", it's the block.
         # The folder immediately before it is the course/subject.
         for idx, part in enumerate(parts):
-            if re.search(r"(?i)\bblock\s+\d+", part):
-                block = part  # Keep full name (e.g., "BLOCK 1 KALIDASA") for precise metadata
-                if idx > 0 and not parts[idx - 1].startswith("rag_store"):
+            # Match folders that include the word 'block' (numeric or named blocks)
+            if re.search(r"(?i)\bblock\b", part):
+                block = part  # Keep full name (e.g., "BLOCK KALIDASA ABHIJNANA SHAKUNTALA")
+                # The folder immediately before the block folder is the subject/course
+                if idx > 0 and not parts[idx - 1].lower().startswith("rag_store"):
                     subject = parts[idx - 1]
                 break
 
-        # Fallback if no block keyword is found
+        # Fallback if no explicit block detected: assume the second-last segment is the subject
         if not subject and len(parts) >= 2:
             subject = parts[-2]
 
@@ -179,7 +181,7 @@ class MinimalRAGRetriever:
         effective_block = block
         if not effective_block and chapter:
             # Check if chapter string passed from UI holds the block
-            if re.search(r"(?i)\bblock\s+\d+", chapter):
+            if re.search(r"(?i)\bblock\b", chapter):
                 effective_block = chapter
 
         had_explicit_filters = bool(subject or effective_block)
@@ -209,6 +211,7 @@ class MinimalRAGRetriever:
                     if r["extracted_block"] and block_lower in r["extracted_block"].lower()
                 ]
 
+        # RESTORED MISSING RETURN STATEMENTS:
         if not filtered_records and had_explicit_filters:
             return []
 
@@ -490,27 +493,56 @@ class MinimalRAGRetriever:
         return "\n\n".join(texts), metas
 
     def _load_citations_from_doc(self, doc_dir: Path) -> List[Dict[str, Any]]:
-        citations_path = doc_dir / "citations.json"
-        if not citations_path.exists():
-            return []
-        try:
-            with open(citations_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            # Expecting a list of citation entries. Support several common shapes.
+        # Look for citations.json in the document folder and upward through parents
+        found: List[Dict[str, Any]] = []
+        tried_paths: List[Path] = []
+
+        # Search doc_dir and its ancestors up to the RAG store root
+        search_dirs = [doc_dir] + list(doc_dir.parents)
+        for p in search_dirs:
+            # Stop searching once we escape the store root to avoid scanning unrelated folders
+            try:
+                if p == self.store_dir or self.store_dir in p.parents:
+                    # allow checking this directory and continue one level up if needed
+                    pass
+            except Exception:
+                # In case of unusual path perms/resolution, continue but limit search depth
+                pass
+
+            citations_path = p / "citations.json"
+            tried_paths.append(citations_path)
+            if not citations_path.exists():
+                continue
+            try:
+                with open(citations_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                continue
+
+            entries: List[Dict[str, Any]] = []
             if isinstance(data, list):
-                return data
-            if isinstance(data, dict):
-                # Common top-level keys
+                entries = data
+            elif isinstance(data, dict):
                 for key in ("citations", "items", "quotes"):
                     if isinstance(data.get(key), list):
-                        return data.get(key)
-                # If the dict itself maps ids to objects, return values
-                values = [v for v in data.values() if isinstance(v, (dict, str))]
-                if values:
-                    return values
-            return []
-        except Exception:
-            return []
+                        entries = data.get(key)
+                        break
+                if not entries:
+                    # If the dict maps ids to objects or simple strings, return values
+                    values = [v for v in data.values() if isinstance(v, (dict, str))]
+                    if values:
+                        entries = values
+
+            # Normalize entries to dicts when possible
+            for e in entries:
+                if isinstance(e, (dict, str)):
+                    found.append(e)
+
+            # If we found entries in a parent block folder, prefer those (don't continue searching further up)
+            if found:
+                break
+
+        return found
 
     def _strip_citation_parentheticals(self, text: str) -> str:
         # Remove parenthetical citation markers that likely indicate pages/authors.

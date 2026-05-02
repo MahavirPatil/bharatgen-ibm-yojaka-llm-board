@@ -731,6 +731,9 @@
                         style="color: var(--text-primary);">
                         ...
                     </div>
+                    <div id="qCitation" class="hidden mt-6 p-5 rounded-2xl border-l-4 text-sm leading-relaxed" 
+                        style="background: var(--bg-tertiary); border-color: var(--text-muted); color: var(--text-secondary);">
+                    </div>
                     <div id="rubricSection" class="hidden rubric-panel mt-6 rounded-3xl border p-6 md:p-7">
                         <div class="flex items-center justify-between gap-4 mb-4">
                             <div class="text-xs font-black uppercase tracking-widest" style="color: var(--accent-secondary);">
@@ -1897,19 +1900,48 @@ ${activeLanguage === 'hi' ? 'सभी' : 'ALL'}
         function renderQ() {
             if (filteredQuestions.length === 0) return;
             const q = filteredQuestions[cursor];
-            document.getElementById('qTypeLabel').innerText =
-    getQuestionTypeLabel(q.category || "General Question");
+            
+            document.getElementById('qTypeLabel').innerText = getQuestionTypeLabel(q.category || "General Question");
             renderTypeMatchStatus(q);
 
+            // 1. FIX: Render the actual question! (This got accidentally deleted)
             document.getElementById('qContent').innerHTML = marked.parse(q.question || "");
-            renderRubric(q.rubric || null, q.answer || "");
-            document.getElementById('aContent').innerHTML = marked.parse(q.rubric?.answer || "");
-
+            
+            // 2. FIX: Render the answer (properly falling back to the top-level answer)
+            document.getElementById('aContent').innerHTML = marked.parse(q.rubric?.answer || q.answer || "No answer provided.");
             document.getElementById('aContent').classList.add('hidden');
+
+            // 3. Render the rubric
+            renderRubric(q.rubric || null, q.answer || "");
+
+            // 4. Handle the citation visibility and content
+            const citationDiv = document.getElementById('qCitation');
+            if (citationDiv) {
+                // STRICT CHECK: Check if the citation toggle was actually ON when this question was generated
+                const isCitationMode = q.generation_settings ? q.generation_settings.use_citation : currentUseCitation;
+
+                // Only render if the LLM provided a citation AND the user specifically requested citation mode
+                if (q.citation && isCitationMode) {
+                    // Scrub redundant "Citation:" labels injected by the LLM
+                    let cleanCitation = q.citation.replace(/^(?:\*\*Citation:\*\*\s*|Citation:\s*)+/ig, '').trim();
+                    
+                    const citationParts = cleanCitation.split(/(?:\*\*Citation:\*\*\s*|Citation:\s*)/i).filter(p => p.trim().length > 0);
+                    if (citationParts.length > 0) {
+                        cleanCitation = citationParts[0].trim();
+                    }
+
+                    citationDiv.innerHTML = marked.parse("**Citation:** *" + cleanCitation + "*");
+                    citationDiv.classList.remove('hidden');
+                } else {
+                    // If Citation Mode is OFF, hide the box completely (even if the LLM generated a citation for grounding)
+                    citationDiv.classList.add('hidden');
+                }
+            }
+
             document.getElementById('progressBar').innerText =
-    activeLanguage === 'hi'
-        ? `प्रगति: ${toHindiNumber(cursor + 1)} / ${toHindiNumber(filteredQuestions.length)}`
-        : `PROGRESS: ${cursor + 1} OF ${filteredQuestions.length}`;
+                activeLanguage === 'hi'
+                    ? `प्रगति: ${toHindiNumber(cursor + 1)} / ${toHindiNumber(filteredQuestions.length)}`
+                    : `PROGRESS: ${cursor + 1} OF ${filteredQuestions.length}`;
 
             // Display generation time if available
             const genTimeEl = document.getElementById('qGenerationTime');
@@ -1924,26 +1956,26 @@ ${activeLanguage === 'hi' ? 'सभी' : 'ALL'}
 
 
             document.getElementById('revealBtn').innerText =
-    activeLanguage === 'hi'
-        ? "अध्ययन तर्क दिखाएँ"
-        : "REVEAL STUDY LOGIC";
+                activeLanguage === 'hi'
+                    ? "अध्ययन तर्क दिखाएँ"
+                    : "REVEAL STUDY LOGIC";
 
-            // renderAlignmentScore(q);
             // Source text and Explore
             const sourceTextSection = document.getElementById('sourceTextSection');
             const sourceTextContent = document.getElementById('sourceTextContent');
             const exploreBtn = document.getElementById('exploreBtn');
             const sourceText = q.source_text || {};
+            
             if (sourceText.topic_chunk) {
                 sourceTextSection.classList.remove('hidden');
 
                 const topicText = sourceText.topic_chunk || '';
                 document.getElementById('sourceTopicChunk').innerText = topicText;
 
-                // 🔴 Highlight "SOURCE TEXT" button red if RAG failed
+                // Highlight "SOURCE TEXT" button red if RAG failed
                 const toggleBtn = document.getElementById('toggleSourceTextBtn');
                 if (topicText.trim() === 'RAG failed.') {
-                    toggleBtn.style.color = '#ef4444';      // red text
+                    toggleBtn.style.color = '#ef4444';      
                     toggleBtn.style.borderColor = '#ef4444';
                 } else {
                     toggleBtn.style.color = '';
@@ -1959,12 +1991,13 @@ ${activeLanguage === 'hi' ? 'सभी' : 'ALL'}
                 sourceTextContent.classList.add('hidden');
                 document.getElementById('sourceTextIcon').classList.remove('fa-chevron-up');
                 document.getElementById('sourceTextIcon').classList.add('fa-chevron-down');
-                // exploreBtn.classList.remove('hidden');
             } else {
                 sourceTextSection.classList.add('hidden');
                 exploreBtn.classList.add('hidden');
             }
+            
             renderMath();
+            
             // Render board opinions if available
             if (q.board_metadata) {
                 renderBoardOpinions(q.board_metadata);

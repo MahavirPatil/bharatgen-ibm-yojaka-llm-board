@@ -71,6 +71,14 @@ def _extract_block_label(pdf_stem: str, full_text: str) -> str:
     # (e.g., "1 KALIDASA" from text beats "1" from filename)
     best_label = label_text if len(label_text) > len(label_file) else label_file
     
+    # INTRODUCTION override
+    if best_label.upper() == "INTRODUCTION":
+        # Fallback to the block number from the filename
+        num_match = re.search(r'\bBLOCK\s*(\d+|[IVX]+)\b', stem_norm)
+        if num_match:
+            best_label = num_match.group(1)
+    # ---------------------------------
+    
     if best_label:
         return f"BLOCK {_safe_path_segment(best_label.upper())}"
         
@@ -346,9 +354,11 @@ def extract_block_citations(
             
         logger.info(f"✓ Extracted {len(extracted_citations)} citation pages to {citations_file.name}")
         
+
 def process_single_pdf(
     pdf_path: Path,
     output_dir: Path,
+    used_block_labels: dict,
     force_ocr: bool = False,
     split_by_unit: bool = True,
 ) -> List[dict]:
@@ -364,8 +374,24 @@ def process_single_pdf(
         # Keep Unit-* for compatibility, but avoid embedding BLOCK in unit id repeatedly.
         base_document_id = _build_base_unit_document_id(pdf_path.stem, doc_hash)
 
-        # Create explicit block folder level: subject/egyankosh/BLOCK <NAME>/Unit-.../chunks.
+        # 1. Extract the initial label
         block_label = _extract_block_label(pdf_path.stem, full_text)
+        
+        # 2. COLLISION DETECTION: Check if this label is already taken by a DIFFERENT PDF in this subject folder
+        if block_label in used_block_labels and used_block_labels[block_label] != pdf_path.stem:
+            logger.warning(f"Collision detected! '{block_label}' was already used by '{used_block_labels[block_label]}'.")
+            
+            # Extract something like 'BLOCK 4' from the current pdf name to use as a suffix
+            stem_block_match = re.search(r'(BLOCK\s*[\w\d]+)', pdf_path.stem, re.IGNORECASE)
+            suffix = stem_block_match.group(1).upper() if stem_block_match else pdf_path.stem.replace(" ", "_")
+            
+            # Append the suffix to make it unique
+            block_label = f"{block_label}_{suffix}"
+            logger.info(f"Renamed block to: {block_label}")
+
+        # Register this block label to this specific PDF
+        used_block_labels[block_label] = pdf_path.stem
+
         block_output_dir = output_dir / block_label
         block_output_dir.mkdir(parents=True, exist_ok=True)
         
@@ -444,18 +470,30 @@ def batch_process(input_dir: str, output_dir: str = None, force_ocr: bool = Fals
     
     all_metadata = {}
     
+    # Dictionary to track block name ownership per subject folder to prevent cross-PDF merging
+    subject_block_trackers = {}
+    
     for i, pdf_path in enumerate(pdfs, 1):
         logger.info(f"\n[{i}/{len(pdfs)}] Processing: {pdf_path.relative_to(base_input_path)}")
         
         rel_path = pdf_path.relative_to(base_input_path)
         
-        # Strip 'egyankosh' from the nested folder path
         clean_parent_parts = [p for p in rel_path.parent.parts if p.lower() != "egyankosh"]
         target_dir = output_path.joinpath(*clean_parent_parts)
         target_dir.mkdir(parents=True, exist_ok=True)
         
-        # Process without API client
-        metadata_list = process_single_pdf(pdf_path, target_dir, force_ocr=force_ocr, split_by_unit=split_by_unit)
+        # Initialize tracking for this specific subject directory if we haven't yet
+        if target_dir not in subject_block_trackers:
+            subject_block_trackers[target_dir] = {}
+        used_block_labels = subject_block_trackers[target_dir]
+        
+        metadata_list = process_single_pdf(
+            pdf_path, 
+            target_dir, 
+            used_block_labels=used_block_labels, 
+            force_ocr=force_ocr, 
+            split_by_unit=split_by_unit
+        )
         for metadata in metadata_list:
             all_metadata[metadata["document_id"]] = metadata
     

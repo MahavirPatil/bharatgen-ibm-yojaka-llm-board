@@ -17,7 +17,7 @@ except ImportError:
 _groq_client = None
 
 
-GEN_DEFAULT_MAX_OUTPUT_TOKENS = int(os.getenv("GEN_DEFAULT_MAX_OUTPUT_TOKENS", "1200"))
+GEN_DEFAULT_MAX_OUTPUT_TOKENS = int(os.getenv("GEN_DEFAULT_MAX_OUTPUT_TOKENS", "6096"))
 GEN_MIN_OUTPUT_TOKENS = int(os.getenv("GEN_MIN_OUTPUT_TOKENS", "256"))
 
 def set_clients(groq_client=None):
@@ -119,7 +119,7 @@ def get_completion_token_budget(model_id: str, req=None) -> int:
     if req is not None and hasattr(req, "qType"):
         qtype = str(getattr(req, "qType") or "")
 
-    suggested = 500 + (n * 350)
+    suggested = 5000 + (n * 350)
     if "Multiple Choice" in qtype:
         suggested += 120
 
