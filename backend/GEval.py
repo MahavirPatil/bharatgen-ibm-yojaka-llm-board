@@ -49,7 +49,7 @@ ollama_id_model_mapping = {
 class GEval:
     def __init__(
         self,
-        model: str = 'groq-llama-8b',
+        model: str = 'ollama-gemma4-31b',
         groq_api_key: str = '',
         likert_scale: List[int] = None,
     ):
