@@ -4,9 +4,11 @@ import pickle
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-
+from dotenv import load_dotenv
 import numpy as np
 from sentence_transformers import SentenceTransformer
+
+load_dotenv()
 
 
 BASE_DIR = Path(__file__).resolve().parent
