@@ -2,6 +2,9 @@ import json, random, ast, os
 from typing import Dict, List
 from urllib.parse import urlparse
 import torch, requests, re
+from dotenv import load_dotenv
+
+load_dotenv()
 
 try:
     from groq import Groq
@@ -113,6 +116,50 @@ class GEval:
         prob_dict = {str(k): v for k, v in zip(self.likert_scale, probs)}
         return json.dumps(prob_dict, indent=2)
 
+    def _default_probability_distribution(self) -> Dict[int, float]:
+        if not self.likert_scale:
+            return {1: 1.0}
+
+        weight = 1.0 / len(self.likert_scale)
+        probabilities = {int(score): weight for score in self.likert_scale}
+        probabilities[int(self.likert_scale[-1])] += 1.0 - sum(probabilities.values())
+        return probabilities
+
+    def _coerce_probability_distribution(self, probabilities) -> Dict[int, float]:
+        if isinstance(probabilities, str):
+            payload = probabilities.strip()
+            if not payload:
+                return self._default_probability_distribution()
+            try:
+                probabilities = json.loads(payload)
+            except Exception:
+                try:
+                    probabilities = ast.literal_eval(payload)
+                except Exception:
+                    return self._default_probability_distribution()
+
+        if not isinstance(probabilities, dict):
+            return self._default_probability_distribution()
+
+        cleaned: Dict[int, float] = {}
+        for score in self.likert_scale:
+            raw_value = probabilities.get(str(score), probabilities.get(score, 0.0))
+            try:
+                value = float(raw_value)
+            except (TypeError, ValueError):
+                value = 0.0
+
+            if value != value or value < 0:
+                value = 0.0
+
+            cleaned[int(score)] = value
+
+        total = sum(cleaned.values())
+        if total <= 0:
+            return self._default_probability_distribution()
+
+        return {score: value / total for score, value in cleaned.items()}
+
     def generate_cot(self, task_description: str, evaluation_parameter: str) -> str:
         prompt = f"""
 You are an expert evaluator. 
@@ -178,20 +225,8 @@ Format exactly like this:
                 model_output = extract(model_output)
         except:
             model_output = model_output.strip()
-            
-        if type(model_output) == str:
-            model_output = model_output.strip()
-        elif type(model_output) == dict:
-            return model_output
-            
-        try:
-            probs = json.loads(model_output)
-        except Exception:
-            try:
-                probs = ast.literal_eval(model_output)
-            except Exception:
-                return {1: 1.0}
-        return {int(k): float(v) for k, v in probs.items()}
+
+        return self._coerce_probability_distribution(model_output)
 
     def compute_weighted_score(self, probabilities: Dict[int, float]) -> float:
         return sum(score * probabilities.get(score, 0.0) for score in self.likert_scale)
