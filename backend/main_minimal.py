@@ -56,8 +56,8 @@ def _normalize_legacy_generation_model_id(model_id: str) -> str:
     return model_id
 
 
-GEVAL_MODEL = _ensure_model_id(os.getenv("GEVAL_MODEL", "groq-llama-70b"), "groq-llama-70b")
-GEVAL_MODEL_2 = _ensure_model_id(os.getenv("GEVAL_MODEL_2", "groq-qwen-32b"), "groq-qwen-32b")
+GEVAL_MODEL = _ensure_model_id(os.getenv("GEVAL_MODEL", "ollama-gemma4-e4b"), "ollama-gemma4-e4b")
+GEVAL_MODEL_2 = _ensure_model_id(os.getenv("GEVAL_MODEL_2", "ollama-phi4-mini"), "ollama-phi4-mini")
 
 param_ncert = GEval(model=GEVAL_MODEL, groq_api_key=os.getenv("GROQ_API_KEY", "").strip(), likert_scale=[1, 2, 3, 4, 5])
 llama_bloom = GEval(model=GEVAL_MODEL_2, groq_api_key=os.getenv("GROQ_API_KEY", "").strip(), likert_scale=[1, 2, 3, 4, 5])
