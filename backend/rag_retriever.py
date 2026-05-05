@@ -373,10 +373,11 @@ class MinimalRAGRetriever:
         if not neighbors_text:
             return base_text, 0
 
+        separator = '\n\n'
         expanded = (
             f"{base_text}\n\n"
             "--- Graph Context Expansion (Connected Sections) ---\n"
-            f"{'\n\n'.join(neighbors_text)}"
+            f"{separator.join(neighbors_text)}"
         )
         return expanded, len(neighbors_text)
 
