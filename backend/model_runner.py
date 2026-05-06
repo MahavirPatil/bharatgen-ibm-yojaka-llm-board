@@ -4,10 +4,14 @@ Unified RAG retrieval is handled separately by rag_retriever module.
 """
 import asyncio
 import os
+import logging
 from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Module logger
+logger = logging.getLogger(__name__)
 
 # Determine the active provider
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama").lower()
@@ -48,7 +52,7 @@ def initialize_clients():
             try:
                 _groq_client = Groq(api_key=groq_api_key)
             except Exception as e:
-                print(f"Warning: Failed to initialize Groq client: {e}")
+                logger.warning("Failed to initialize Groq client: %s", e)
                 
     # Initialize Ollama if needed
     if _ollama_client is None and OLLAMA_AVAILABLE and LLM_PROVIDER == "ollama":
@@ -75,7 +79,8 @@ def initialize_clients():
 
         if _ollama_client is None:
             errs = "; ".join([f"{b}: {err}" for b, err in tried])
-            print(f"Warning: Failed to initialize Ollama client for bases [{', '.join([b for b,_ in tried])}]. Errors: {errs}")
+            bases_list = ', '.join([b for b, _ in tried])
+            logger.warning("Failed to initialize Ollama client for bases [%s]. Errors: %s", bases_list, errs)
 
 async def run_model(model_id: str, prompt: str, req=None, temperature: Optional[float] = None) -> str:
     initialize_clients()
