@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Determine the active provider
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama").lower()
 
 try:
     from groq import Groq
@@ -52,14 +52,30 @@ def initialize_clients():
                 
     # Initialize Ollama if needed
     if _ollama_client is None and OLLAMA_AVAILABLE and LLM_PROVIDER == "ollama":
-        try:
-            # Ollama requires an API key string, but it doesn't validate it.
-            _ollama_client = AsyncOpenAI(
-                base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
-                api_key="ollama" 
-            )
-        except Exception as e:
-            print(f"Warning: Failed to initialize Ollama client: {e}")
+        env_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        env_base = env_base.strip()
+        tried = []
+
+        # Try the provided base first, then try appending /v1 if not present.
+        candidates = [env_base]
+        if not env_base.endswith("/v1"):
+            candidates.append(env_base.rstrip("/") + "/v1")
+
+        for base_try in candidates:
+            try:
+                # Ollama requires an API key string, but it doesn't validate it.
+                _ollama_client = AsyncOpenAI(
+                    base_url=base_try,
+                    api_key="ollama"
+                )
+                break
+            except Exception as e:
+                tried.append((base_try, str(e)))
+                _ollama_client = None
+
+        if _ollama_client is None:
+            errs = "; ".join([f"{b}: {err}" for b, err in tried])
+            print(f"Warning: Failed to initialize Ollama client for bases [{', '.join([b for b,_ in tried])}]. Errors: {errs}")
 
 async def run_model(model_id: str, prompt: str, req=None, temperature: Optional[float] = None) -> str:
     initialize_clients()
