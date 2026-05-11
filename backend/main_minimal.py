@@ -88,6 +88,8 @@ class QueryRequest(BaseModel):
     enable_graph_expansion: bool = False
     enable_task_keywords: bool = True
     temperature: float = Field(default=0.7, ge=0.0, le=1.0)
+    rubric_marks:int= Field(default=5,ge=1,le=50)
+    answer_length:str=""
 
 
 SUPPORTED_QTYPES = {
