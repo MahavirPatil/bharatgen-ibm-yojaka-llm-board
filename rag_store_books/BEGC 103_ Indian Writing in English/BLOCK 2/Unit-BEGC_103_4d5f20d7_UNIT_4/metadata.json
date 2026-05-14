@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_103_4d5f20d7_UNIT_4",
+  "unit_title": "UNIT 4 THE BINDING VINE\u2014",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BEGC 103 BLOCK 2.pdf",
+  "processed_at": "2026-05-09T04:44:30.495466",
+  "total_pages": 42,
+  "total_chunks": 13,
+  "total_words": 4849,
+  "graph_nodes": 14,
+  "graph_edges": 14,
+  "store_path": "rag_store_books/BEGC 103_ Indian Writing in English/BLOCK 2/Unit-BEGC_103_4d5f20d7_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

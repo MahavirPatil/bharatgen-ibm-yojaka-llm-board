@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_104_5e67fe2b_UNIT_3",
+  "unit_title": "UNIT 3 MACBETH: PART-II",
+  "block_label": "BLOCK 4",
+  "source_pdf": "BEGC 104 BLOCK 4.pdf",
+  "processed_at": "2026-05-09T05:39:10.288873",
+  "total_pages": 55,
+  "total_chunks": 18,
+  "total_words": 6020,
+  "graph_nodes": 19,
+  "graph_edges": 19,
+  "store_path": "rag_store_books/BEGC 104_ British Poetry and Drama_ 14th - 17th Centuries/BLOCK 4/Unit-BEGC_104_5e67fe2b_UNIT_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

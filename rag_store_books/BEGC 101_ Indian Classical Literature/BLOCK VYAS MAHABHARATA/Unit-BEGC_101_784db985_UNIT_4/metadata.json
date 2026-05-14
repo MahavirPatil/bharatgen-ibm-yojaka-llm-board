@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_101_784db985_UNIT_4",
+  "unit_title": "UNIT 4 THE TEMPTATION OF KARNA",
+  "block_label": "BLOCK VYAS MAHABHARATA",
+  "source_pdf": "BEGC 101 BLOCK 2.pdf",
+  "processed_at": "2026-05-09T05:25:43.344383",
+  "total_pages": 56,
+  "total_chunks": 22,
+  "total_words": 6456,
+  "graph_nodes": 23,
+  "graph_edges": 23,
+  "store_path": "rag_store_books/BEGC 101_ Indian Classical Literature/BLOCK VYAS MAHABHARATA/Unit-BEGC_101_784db985_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

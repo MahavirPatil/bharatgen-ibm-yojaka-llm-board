@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_101_31fa296a_UNIT_3",
+  "unit_title": "UNIT 3 ABHIJNANA SHAKUNTALA:",
+  "block_label": "BLOCK KALIDASA ABHIJNANA SHAKUNTALA",
+  "source_pdf": "BEGC 101 BLOCK 1.pdf",
+  "processed_at": "2026-05-09T05:25:33.667163",
+  "total_pages": 43,
+  "total_chunks": 21,
+  "total_words": 5404,
+  "graph_nodes": 22,
+  "graph_edges": 22,
+  "store_path": "rag_store_books/BEGC 101_ Indian Classical Literature/BLOCK KALIDASA ABHIJNANA SHAKUNTALA/Unit-BEGC_101_31fa296a_UNIT_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

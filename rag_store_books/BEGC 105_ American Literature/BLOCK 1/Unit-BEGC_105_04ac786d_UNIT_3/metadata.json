@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_04ac786d_UNIT_3",
+  "unit_title": "UNIT 3 THEMATIC CONCERNS IN",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BEGC 105 BLOCK 1.pdf",
+  "processed_at": "2026-05-09T05:39:14.903640",
+  "total_pages": 52,
+  "total_chunks": 34,
+  "total_words": 11260,
+  "graph_nodes": 35,
+  "graph_edges": 35,
+  "store_path": "rag_store_books/BEGC 105_ American Literature/BLOCK 1/Unit-BEGC_105_04ac786d_UNIT_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

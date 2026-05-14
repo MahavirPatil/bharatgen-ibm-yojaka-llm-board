@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_102_ebfa3220_UNIT_2",
+  "unit_title": "UNIT 2 POT OF GOLD-I",
+  "block_label": "BLOCK 3",
+  "source_pdf": "BEGC 102 BLOCK 3.pdf",
+  "processed_at": "2026-05-09T05:32:32.061746",
+  "total_pages": 48,
+  "total_chunks": 10,
+  "total_words": 4094,
+  "graph_nodes": 11,
+  "graph_edges": 11,
+  "store_path": "rag_store_books/BEGC 102_ European Classical Literature/BLOCK 3/Unit-BEGC_102_ebfa3220_UNIT_2",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

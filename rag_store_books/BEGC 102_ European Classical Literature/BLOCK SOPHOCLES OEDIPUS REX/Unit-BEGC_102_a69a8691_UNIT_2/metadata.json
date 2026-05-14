@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_102_a69a8691_UNIT_2",
+  "unit_title": "UNIT 2 OEDIPUS REX: SUMMARY AND ANALYSIS",
+  "block_label": "BLOCK SOPHOCLES OEDIPUS REX",
+  "source_pdf": "BEGC 102 BLOCK 2.pdf",
+  "processed_at": "2026-05-01T12:59:31.471778",
+  "total_pages": 44,
+  "total_chunks": 11,
+  "total_words": 4314,
+  "graph_nodes": 12,
+  "graph_edges": 12,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 102_ European Classical Literature\\BLOCK SOPHOCLES OEDIPUS REX\\Unit-BEGC_102_a69a8691_UNIT_2",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

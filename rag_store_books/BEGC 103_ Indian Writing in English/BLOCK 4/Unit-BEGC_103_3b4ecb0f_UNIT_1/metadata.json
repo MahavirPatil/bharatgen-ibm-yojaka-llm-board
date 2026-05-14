@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_103_3b4ecb0f_UNIT_1",
+  "unit_title": "UNIT 1",
+  "block_label": "BLOCK 4",
+  "source_pdf": "BEGC 103 BLOCK 4.pdf",
+  "processed_at": "2026-05-09T04:44:30.925115",
+  "total_pages": 63,
+  "total_chunks": 21,
+  "total_words": 5060,
+  "graph_nodes": 22,
+  "graph_edges": 22,
+  "store_path": "rag_store_books/BEGC 103_ Indian Writing in English/BLOCK 4/Unit-BEGC_103_3b4ecb0f_UNIT_1",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

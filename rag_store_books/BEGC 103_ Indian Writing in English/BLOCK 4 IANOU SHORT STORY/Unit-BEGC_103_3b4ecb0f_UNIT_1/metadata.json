@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_103_3b4ecb0f_UNIT_1",
+  "unit_title": "UNIT 1",
+  "block_label": "BLOCK 4 IANOU SHORT STORY",
+  "source_pdf": "BEGC 103 BLOCK 4.pdf",
+  "processed_at": "2026-05-09T05:34:46.974312",
+  "total_pages": 68,
+  "total_chunks": 26,
+  "total_words": 5045,
+  "graph_nodes": 27,
+  "graph_edges": 27,
+  "store_path": "rag_store_books/BEGC 103_ Indian Writing in English/BLOCK 4 IANOU SHORT STORY/Unit-BEGC_103_3b4ecb0f_UNIT_1",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

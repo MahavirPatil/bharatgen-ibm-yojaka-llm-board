@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_102_d719495b_UNIT_5",
+  "unit_title": "UNIT 5",
+  "block_label": "BLOCK HORACE AND OVID",
+  "source_pdf": "BEGC 102 BLOCK 4.pdf",
+  "processed_at": "2026-05-01T13:32:55.847208",
+  "total_pages": 62,
+  "total_chunks": 18,
+  "total_words": 6873,
+  "graph_nodes": 19,
+  "graph_edges": 19,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 102_ European Classical Literature\\BLOCK HORACE AND OVID\\Unit-BEGC_102_d719495b_UNIT_5",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

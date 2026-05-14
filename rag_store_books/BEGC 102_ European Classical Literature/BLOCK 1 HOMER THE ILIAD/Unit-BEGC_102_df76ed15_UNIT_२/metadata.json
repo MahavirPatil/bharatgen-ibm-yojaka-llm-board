@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_102_df76ed15_UNIT_\u0968",
+  "unit_title": "UNIT \u0968",
+  "block_label": "BLOCK 1 HOMER THE ILIAD",
+  "source_pdf": "BEGC 102 BLOCK 1.pdf",
+  "processed_at": "2026-05-09T05:28:01.844842",
+  "total_pages": 40,
+  "total_chunks": 8,
+  "total_words": 2483,
+  "graph_nodes": 9,
+  "graph_edges": 9,
+  "store_path": "rag_store_books/BEGC 102_ European Classical Literature/BLOCK 1 HOMER THE ILIAD/Unit-BEGC_102_df76ed15_UNIT_\u0968",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

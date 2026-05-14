@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_f48f6a2e_UNIT_4",
+  "unit_title": "UNIT 4 Ernest Hemingway: Snows of Kilimanjaro /",
+  "block_label": "BLOCK SHORT FICTION",
+  "source_pdf": "BEGC 105 BLOCK 3.pdf",
+  "processed_at": "2026-05-01T13:41:08.315272",
+  "total_pages": 42,
+  "total_chunks": 2,
+  "total_words": 182,
+  "graph_nodes": 3,
+  "graph_edges": 3,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 105_ American Literature\\BLOCK SHORT FICTION\\Unit-BEGC_105_f48f6a2e_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

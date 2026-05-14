@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_104_e980fb4c_UNIT_3",
+  "unit_title": "UNIT 3 JOHN DONNE: LIFE AND WORKS",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BEGC 104 BLOCK 2.pdf",
+  "processed_at": "2026-05-09T05:34:57.696329",
+  "total_pages": 37,
+  "total_chunks": 24,
+  "total_words": 5926,
+  "graph_nodes": 25,
+  "graph_edges": 25,
+  "store_path": "rag_store_books/BEGC 104_ British Poetry and Drama_ 14th - 17th Centuries/BLOCK 2/Unit-BEGC_104_e980fb4c_UNIT_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_102_0d842b65_UNIT_3",
+  "unit_title": "UNIT 3",
+  "block_label": "BLOCK 4",
+  "source_pdf": "BEGC 102 BLOCK 4.pdf",
+  "processed_at": "2026-05-09T05:34:26.964870",
+  "total_pages": 62,
+  "total_chunks": 11,
+  "total_words": 4910,
+  "graph_nodes": 12,
+  "graph_edges": 12,
+  "store_path": "rag_store_books/BEGC 102_ European Classical Literature/BLOCK 4/Unit-BEGC_102_0d842b65_UNIT_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

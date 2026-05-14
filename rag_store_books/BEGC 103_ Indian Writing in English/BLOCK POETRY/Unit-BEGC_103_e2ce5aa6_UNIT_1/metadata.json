@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_103_e2ce5aa6_UNIT_1",
+  "unit_title": "UNIT 1",
+  "block_label": "BLOCK POETRY",
+  "source_pdf": "BEGC 103 BLOCK 3.pdf",
+  "processed_at": "2026-05-01T13:34:20.812397",
+  "total_pages": 46,
+  "total_chunks": 13,
+  "total_words": 4199,
+  "graph_nodes": 14,
+  "graph_edges": 14,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 103_ Indian Writing in English\\BLOCK POETRY\\Unit-BEGC_103_e2ce5aa6_UNIT_1",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

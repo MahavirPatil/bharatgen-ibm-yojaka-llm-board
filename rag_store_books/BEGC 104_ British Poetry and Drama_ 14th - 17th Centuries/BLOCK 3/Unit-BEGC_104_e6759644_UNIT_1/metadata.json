@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_104_e6759644_UNIT_1",
+  "unit_title": "UNIT 1 MARLOWE: LIFE AND WORKS",
+  "block_label": "BLOCK 3",
+  "source_pdf": "BEGC 104 BLOCK 3.pdf",
+  "processed_at": "2026-05-09T05:38:52.316766",
+  "total_pages": 41,
+  "total_chunks": 29,
+  "total_words": 5907,
+  "graph_nodes": 30,
+  "graph_edges": 30,
+  "store_path": "rag_store_books/BEGC 104_ British Poetry and Drama_ 14th - 17th Centuries/BLOCK 3/Unit-BEGC_104_e6759644_UNIT_1",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

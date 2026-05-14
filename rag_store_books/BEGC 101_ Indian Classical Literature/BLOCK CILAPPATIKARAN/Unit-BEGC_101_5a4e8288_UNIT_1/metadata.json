@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_101_5a4e8288_UNIT_1",
+  "unit_title": "UNIT 1 SANGAM LITERATURE: AN",
+  "block_label": "BLOCK CILAPPATIKARAN",
+  "source_pdf": "BEGC 101 BLOCK 4.pdf",
+  "processed_at": "2026-05-01T12:28:33.715049",
+  "total_pages": 48,
+  "total_chunks": 11,
+  "total_words": 3425,
+  "graph_nodes": 12,
+  "graph_edges": 12,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 101_ Indian Classical Literature\\BLOCK CILAPPATIKARAN\\Unit-BEGC_101_5a4e8288_UNIT_1",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_102_0d842b65_UNIT_2",
+  "unit_title": "UNIT 2 HORACE: LIFE AND WORKS",
+  "block_label": "BLOCK 4",
+  "source_pdf": "BEGC 102 BLOCK 4.pdf",
+  "processed_at": "2026-05-09T05:34:26.166062",
+  "total_pages": 62,
+  "total_chunks": 10,
+  "total_words": 3412,
+  "graph_nodes": 11,
+  "graph_edges": 11,
+  "store_path": "rag_store_books/BEGC 102_ European Classical Literature/BLOCK 4/Unit-BEGC_102_0d842b65_UNIT_2",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

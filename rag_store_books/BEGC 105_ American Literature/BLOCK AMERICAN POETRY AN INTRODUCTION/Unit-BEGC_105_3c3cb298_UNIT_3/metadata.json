@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_3c3cb298_UNIT_3",
+  "unit_title": "UNIT 3 EMILY DICKINSON: Because I",
+  "block_label": "BLOCK AMERICAN POETRY AN INTRODUCTION",
+  "source_pdf": "BEGC 105 BLOCK 4.pdf",
+  "processed_at": "2026-05-01T13:50:07.073841",
+  "total_pages": 65,
+  "total_chunks": 21,
+  "total_words": 4606,
+  "graph_nodes": 22,
+  "graph_edges": 22,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 105_ American Literature\\BLOCK AMERICAN POETRY AN INTRODUCTION\\Unit-BEGC_105_3c3cb298_UNIT_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_104_eeebca0b_UNIT_4",
+  "unit_title": "UNIT 4 MACBETH: CRITICAL RESPONSES",
+  "block_label": "BLOCK SHAKESPEARE MACBETH",
+  "source_pdf": "BEGC 104 BLOCK 4.pdf",
+  "processed_at": "2026-05-01T16:37:10.887585",
+  "total_pages": 55,
+  "total_chunks": 18,
+  "total_words": 6243,
+  "graph_nodes": 19,
+  "graph_edges": 19,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 104_ British Poetry and Drama_ 14th - 17th Centuries\\BLOCK SHAKESPEARE MACBETH\\Unit-BEGC_104_eeebca0b_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

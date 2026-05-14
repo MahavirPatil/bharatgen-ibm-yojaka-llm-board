@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_76600e04_UNIT_1",
+  "unit_title": "UNIT 1 AMERICAN DRAMA : AN",
+  "block_label": "BLOCK ARTHUR MILLER ALL MY SONS",
+  "source_pdf": "BEGC 105 BLOCK 1.pdf",
+  "processed_at": "2026-05-01T13:40:59.379899",
+  "total_pages": 52,
+  "total_chunks": 14,
+  "total_words": 3994,
+  "graph_nodes": 15,
+  "graph_edges": 15,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 105_ American Literature\\BLOCK ARTHUR MILLER ALL MY SONS\\Unit-BEGC_105_76600e04_UNIT_1",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_f48f6a2e_UNIT_1",
+  "unit_title": "UNIT 1 SHORT FICTION: AN",
+  "block_label": "BLOCK SHORT FICTION",
+  "source_pdf": "BEGC 105 BLOCK 3.pdf",
+  "processed_at": "2026-05-01T13:41:09.879607",
+  "total_pages": 42,
+  "total_chunks": 27,
+  "total_words": 7888,
+  "graph_nodes": 28,
+  "graph_edges": 28,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 105_ American Literature\\BLOCK SHORT FICTION\\Unit-BEGC_105_f48f6a2e_UNIT_1",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

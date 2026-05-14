@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_0005ea60_UNIT_3",
+  "unit_title": "UNIT 3 WILLA CATHER: ON THE",
+  "block_label": "BLOCK 3",
+  "source_pdf": "BEGC 105 BLOCK 3.pdf",
+  "processed_at": "2026-05-09T05:39:22.621324",
+  "total_pages": 42,
+  "total_chunks": 27,
+  "total_words": 7810,
+  "graph_nodes": 28,
+  "graph_edges": 28,
+  "store_path": "rag_store_books/BEGC 105_ American Literature/BLOCK 3/Unit-BEGC_105_0005ea60_UNIT_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

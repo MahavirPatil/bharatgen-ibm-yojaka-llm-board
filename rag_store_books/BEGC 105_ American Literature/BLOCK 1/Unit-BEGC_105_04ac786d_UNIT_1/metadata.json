@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_04ac786d_UNIT_1",
+  "unit_title": "UNIT 1 AMERICAN DRAMA : AN",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BEGC 105 BLOCK 1.pdf",
+  "processed_at": "2026-05-09T05:39:13.925272",
+  "total_pages": 52,
+  "total_chunks": 25,
+  "total_words": 10624,
+  "graph_nodes": 26,
+  "graph_edges": 26,
+  "store_path": "rag_store_books/BEGC 105_ American Literature/BLOCK 1/Unit-BEGC_105_04ac786d_UNIT_1",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

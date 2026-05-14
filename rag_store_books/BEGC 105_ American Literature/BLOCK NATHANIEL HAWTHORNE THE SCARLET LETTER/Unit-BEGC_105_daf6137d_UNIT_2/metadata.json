@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_daf6137d_UNIT_2",
+  "unit_title": "UNIT 2 THE SCARLET LETTER:",
+  "block_label": "BLOCK NATHANIEL HAWTHORNE THE SCARLET LETTER",
+  "source_pdf": "BEGC 105 BLOCK 2.pdf",
+  "processed_at": "2026-05-01T13:41:04.171121",
+  "total_pages": 42,
+  "total_chunks": 10,
+  "total_words": 3748,
+  "graph_nodes": 11,
+  "graph_edges": 11,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 105_ American Literature\\BLOCK NATHANIEL HAWTHORNE THE SCARLET LETTER\\Unit-BEGC_105_daf6137d_UNIT_2",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

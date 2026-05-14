@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_103_e6e238fe_UNIT_1",
+  "unit_title": "UNIT 1",
+  "block_label": "BLOCK 3 POETRY IANOU THE PEOPLES UNIVE RSITY 27",
+  "source_pdf": "BEGC 103 BLOCK 3.pdf",
+  "processed_at": "2026-05-09T05:34:41.259958",
+  "total_pages": 46,
+  "total_chunks": 16,
+  "total_words": 4239,
+  "graph_nodes": 17,
+  "graph_edges": 17,
+  "store_path": "rag_store_books/BEGC 103_ Indian Writing in English/BLOCK 3 POETRY IANOU THE PEOPLES UNIVE RSITY 27/Unit-BEGC_103_e6e238fe_UNIT_1",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

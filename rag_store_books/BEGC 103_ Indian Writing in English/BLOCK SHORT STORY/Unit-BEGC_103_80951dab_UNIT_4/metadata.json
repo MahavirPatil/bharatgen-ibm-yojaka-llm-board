@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_103_80951dab_UNIT_4",
+  "unit_title": "UNIT 4 “SWIMMING LESSONS”",
+  "block_label": "BLOCK SHORT STORY",
+  "source_pdf": "BEGC 103 BLOCK 4.pdf",
+  "processed_at": "2026-05-01T13:35:21.531010",
+  "total_pages": 68,
+  "total_chunks": 12,
+  "total_words": 3760,
+  "graph_nodes": 13,
+  "graph_edges": 13,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 103_ Indian Writing in English\\BLOCK SHORT STORY\\Unit-BEGC_103_80951dab_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

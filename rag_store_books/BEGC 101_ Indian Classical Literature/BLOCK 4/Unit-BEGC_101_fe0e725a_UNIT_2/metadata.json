@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_101_fe0e725a_UNIT_2",
+  "unit_title": "UNIT 2 CILAPPATIKARAN: A",
+  "block_label": "BLOCK 4",
+  "source_pdf": "BEGC 101 BLOCK 4.pdf",
+  "processed_at": "2026-05-09T05:25:51.471108",
+  "total_pages": 48,
+  "total_chunks": 9,
+  "total_words": 3126,
+  "graph_nodes": 10,
+  "graph_edges": 10,
+  "store_path": "rag_store_books/BEGC 101_ Indian Classical Literature/BLOCK 4/Unit-BEGC_101_fe0e725a_UNIT_2",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

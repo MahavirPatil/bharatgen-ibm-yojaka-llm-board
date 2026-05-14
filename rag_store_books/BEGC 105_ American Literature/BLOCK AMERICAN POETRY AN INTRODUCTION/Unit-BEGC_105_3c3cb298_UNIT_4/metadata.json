@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_3c3cb298_UNIT_4",
+  "unit_title": "UNIT 4 ALEXIE SHERMANALEXIE CROW TESTAMENT & EVOLUTION",
+  "block_label": "BLOCK AMERICAN POETRY AN INTRODUCTION",
+  "source_pdf": "BEGC 105 BLOCK 4.pdf",
+  "processed_at": "2026-05-01T13:50:08.146701",
+  "total_pages": 65,
+  "total_chunks": 9,
+  "total_words": 2846,
+  "graph_nodes": 10,
+  "graph_edges": 10,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 105_ American Literature\\BLOCK AMERICAN POETRY AN INTRODUCTION\\Unit-BEGC_105_3c3cb298_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

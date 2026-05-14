@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_76600e04_UNIT_4",
+  "unit_title": "UNIT 4 All My Sons: Characterisation",
+  "block_label": "BLOCK ARTHUR MILLER ALL MY SONS",
+  "source_pdf": "BEGC 105 BLOCK 1.pdf",
+  "processed_at": "2026-05-01T13:40:57.901754",
+  "total_pages": 52,
+  "total_chunks": 2,
+  "total_words": 180,
+  "graph_nodes": 3,
+  "graph_edges": 3,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 105_ American Literature\\BLOCK ARTHUR MILLER ALL MY SONS\\Unit-BEGC_105_76600e04_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

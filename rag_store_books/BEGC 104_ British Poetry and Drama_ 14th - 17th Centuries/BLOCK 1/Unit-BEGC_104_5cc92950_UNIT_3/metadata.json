@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_104_5cc92950_UNIT_3",
+  "unit_title": "UNIT 3 SPENSER: LIFE AND WORKS",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BEGC 104 BLOCK 1.pdf",
+  "processed_at": "2026-05-09T05:34:53.185760",
+  "total_pages": 40,
+  "total_chunks": 23,
+  "total_words": 5268,
+  "graph_nodes": 24,
+  "graph_edges": 24,
+  "store_path": "rag_store_books/BEGC 104_ British Poetry and Drama_ 14th - 17th Centuries/BLOCK 1/Unit-BEGC_104_5cc92950_UNIT_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_102_3875e9b3_UNIT_4",
+  "unit_title": "UNIT 4 POT OF GOLD: CRITICAL",
+  "block_label": "BLOCK PLAUTUS POT OF GOD",
+  "source_pdf": "BEGC 102 BLOCK 3.pdf",
+  "processed_at": "2026-05-01T13:17:30.553281",
+  "total_pages": 48,
+  "total_chunks": 11,
+  "total_words": 4536,
+  "graph_nodes": 12,
+  "graph_edges": 12,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 102_ European Classical Literature\\BLOCK PLAUTUS POT OF GOD\\Unit-BEGC_102_3875e9b3_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

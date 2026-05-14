@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_04ac786d_UNIT_4",
+  "unit_title": "UNIT 4 All My Sons: Characterisation",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BEGC 105 BLOCK 1.pdf",
+  "processed_at": "2026-05-09T05:39:12.956419",
+  "total_pages": 52,
+  "total_chunks": 6,
+  "total_words": 742,
+  "graph_nodes": 7,
+  "graph_edges": 7,
+  "store_path": "rag_store_books/BEGC 105_ American Literature/BLOCK 1/Unit-BEGC_105_04ac786d_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_103_8be51a1d_UNIT_3",
+  "unit_title": "UNIT 3 A TIGER FOR MALGUDI: ANALYSIS",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BEGC 103 BLOCK 1.pdf",
+  "processed_at": "2026-05-09T05:34:32.614385",
+  "total_pages": 58,
+  "total_chunks": 9,
+  "total_words": 3538,
+  "graph_nodes": 10,
+  "graph_edges": 10,
+  "store_path": "rag_store_books/BEGC 103_ Indian Writing in English/BLOCK 1/Unit-BEGC_103_8be51a1d_UNIT_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

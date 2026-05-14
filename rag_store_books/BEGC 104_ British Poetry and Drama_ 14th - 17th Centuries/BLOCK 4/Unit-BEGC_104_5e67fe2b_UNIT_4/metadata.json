@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_104_5e67fe2b_UNIT_4",
+  "unit_title": "UNIT 4 MACBETH: CRITICAL RESPONSES",
+  "block_label": "BLOCK 4",
+  "source_pdf": "BEGC 104 BLOCK 4.pdf",
+  "processed_at": "2026-05-09T05:39:11.277642",
+  "total_pages": 55,
+  "total_chunks": 38,
+  "total_words": 6908,
+  "graph_nodes": 39,
+  "graph_edges": 39,
+  "store_path": "rag_store_books/BEGC 104_ British Poetry and Drama_ 14th - 17th Centuries/BLOCK 4/Unit-BEGC_104_5e67fe2b_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

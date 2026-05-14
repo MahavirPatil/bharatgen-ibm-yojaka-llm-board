@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_101_31fa296a_UNIT_2",
+  "unit_title": "UNIT 2 KALIDASA: AN OVERVIEW",
+  "block_label": "BLOCK KALIDASA ABHIJNANA SHAKUNTALA",
+  "source_pdf": "BEGC 101 BLOCK 1.pdf",
+  "processed_at": "2026-05-09T05:25:32.761222",
+  "total_pages": 43,
+  "total_chunks": 18,
+  "total_words": 5569,
+  "graph_nodes": 19,
+  "graph_edges": 19,
+  "store_path": "rag_store_books/BEGC 101_ Indian Classical Literature/BLOCK KALIDASA ABHIJNANA SHAKUNTALA/Unit-BEGC_101_31fa296a_UNIT_2",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

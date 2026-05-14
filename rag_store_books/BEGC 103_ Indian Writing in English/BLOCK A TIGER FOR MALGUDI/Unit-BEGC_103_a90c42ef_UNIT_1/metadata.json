@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_103_a90c42ef_UNIT_1",
+  "unit_title": "UNIT 1",
+  "block_label": "BLOCK A TIGER FOR MALGUDI",
+  "source_pdf": "BEGC 103 BLOCK 1.pdf",
+  "processed_at": "2026-05-01T13:33:21.959742",
+  "total_pages": 58,
+  "total_chunks": 10,
+  "total_words": 3668,
+  "graph_nodes": 11,
+  "graph_edges": 11,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 103_ Indian Writing in English\\BLOCK A TIGER FOR MALGUDI\\Unit-BEGC_103_a90c42ef_UNIT_1",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

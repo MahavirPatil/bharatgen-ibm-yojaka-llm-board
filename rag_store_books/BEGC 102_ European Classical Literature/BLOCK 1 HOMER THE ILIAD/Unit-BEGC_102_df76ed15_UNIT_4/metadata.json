@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_102_df76ed15_UNIT_4",
+  "unit_title": "UNIT 4 TOWARDS 4 POLITICAL ETHICS: MORAL PHILOSOPHY OR CULTURAL NORMS",
+  "block_label": "BLOCK 1 HOMER THE ILIAD",
+  "source_pdf": "BEGC 102 BLOCK 1.pdf",
+  "processed_at": "2026-05-09T05:28:03.542350",
+  "total_pages": 40,
+  "total_chunks": 6,
+  "total_words": 1843,
+  "graph_nodes": 7,
+  "graph_edges": 7,
+  "store_path": "rag_store_books/BEGC 102_ European Classical Literature/BLOCK 1 HOMER THE ILIAD/Unit-BEGC_102_df76ed15_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

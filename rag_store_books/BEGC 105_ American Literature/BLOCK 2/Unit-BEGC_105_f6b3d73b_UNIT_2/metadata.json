@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_f6b3d73b_UNIT_2",
+  "unit_title": "UNIT 2 THE SCARLET LETTER:",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BEGC 105 BLOCK 2.pdf",
+  "processed_at": "2026-05-09T05:39:17.411038",
+  "total_pages": 42,
+  "total_chunks": 16,
+  "total_words": 4175,
+  "graph_nodes": 17,
+  "graph_edges": 17,
+  "store_path": "rag_store_books/BEGC 105_ American Literature/BLOCK 2/Unit-BEGC_105_f6b3d73b_UNIT_2",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/data1/karmela/edu_rag/backend/app.py", line 11, in <module>
+    from main_minimal import app
+  File "/data1/karmela/edu_rag/backend/main_minimal.py", line 13, in <module>
+    from dotenv import load_dotenv
+ModuleNotFoundError: No module named 'dotenv'

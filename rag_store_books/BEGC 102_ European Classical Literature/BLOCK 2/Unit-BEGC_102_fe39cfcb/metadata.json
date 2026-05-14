@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_102_fe39cfcb",
+  "unit_title": "Full Document",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BEGC 102 BLOCK 2.pdf",
+  "processed_at": "2026-05-09T04:44:28.206945",
+  "total_pages": 32,
+  "total_chunks": 2,
+  "total_words": 209,
+  "graph_nodes": 3,
+  "graph_edges": 3,
+  "store_path": "rag_store_books/BEGC 102_ European Classical Literature/BLOCK 2/Unit-BEGC_102_fe39cfcb",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

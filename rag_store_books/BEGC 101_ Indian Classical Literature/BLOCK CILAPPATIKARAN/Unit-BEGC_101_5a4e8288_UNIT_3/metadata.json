@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_101_5a4e8288_UNIT_3",
+  "unit_title": "UNIT 3 THE DIVINE, THE HUMAN",
+  "block_label": "BLOCK CILAPPATIKARAN",
+  "source_pdf": "BEGC 101 BLOCK 4.pdf",
+  "processed_at": "2026-05-01T12:28:34.955298",
+  "total_pages": 48,
+  "total_chunks": 12,
+  "total_words": 2785,
+  "graph_nodes": 13,
+  "graph_edges": 13,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 101_ Indian Classical Literature\\BLOCK CILAPPATIKARAN\\Unit-BEGC_101_5a4e8288_UNIT_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

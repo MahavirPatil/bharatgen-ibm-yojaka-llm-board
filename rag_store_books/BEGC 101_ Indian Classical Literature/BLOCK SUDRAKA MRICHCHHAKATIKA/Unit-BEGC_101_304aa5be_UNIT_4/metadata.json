@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_101_304aa5be_UNIT_4",
+  "unit_title": "UNIT 4 MRICHCHHAKATIKA:",
+  "block_label": "BLOCK SUDRAKA MRICHCHHAKATIKA",
+  "source_pdf": "BEGC 101 BLOCK 3.pdf",
+  "processed_at": "2026-05-09T05:25:48.647527",
+  "total_pages": 50,
+  "total_chunks": 17,
+  "total_words": 5328,
+  "graph_nodes": 18,
+  "graph_edges": 18,
+  "store_path": "rag_store_books/BEGC 101_ Indian Classical Literature/BLOCK SUDRAKA MRICHCHHAKATIKA/Unit-BEGC_101_304aa5be_UNIT_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

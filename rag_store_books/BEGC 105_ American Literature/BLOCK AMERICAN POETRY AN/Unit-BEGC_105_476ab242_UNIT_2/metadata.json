@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_105_476ab242_UNIT_2",
+  "unit_title": "UNIT 2 WALT WHITMAN - \u2018O CAPTAIN,",
+  "block_label": "BLOCK AMERICAN POETRY AN",
+  "source_pdf": "BEGC 105 BLOCK 4.pdf",
+  "processed_at": "2026-05-09T05:40:48.424213",
+  "total_pages": 65,
+  "total_chunks": 24,
+  "total_words": 4421,
+  "graph_nodes": 25,
+  "graph_edges": 25,
+  "store_path": "rag_store_books/BEGC 105_ American Literature/BLOCK AMERICAN POETRY AN/Unit-BEGC_105_476ab242_UNIT_2",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

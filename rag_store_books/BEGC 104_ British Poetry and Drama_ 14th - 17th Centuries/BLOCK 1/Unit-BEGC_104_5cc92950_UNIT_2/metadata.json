@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_104_5cc92950_UNIT_2",
+  "unit_title": "UNIT 2 CHAUCER: THE WIFE OF BATH\u2019S PROLOGUE",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BEGC 104 BLOCK 1.pdf",
+  "processed_at": "2026-05-09T05:34:52.283002",
+  "total_pages": 40,
+  "total_chunks": 22,
+  "total_words": 6181,
+  "graph_nodes": 23,
+  "graph_edges": 23,
+  "store_path": "rag_store_books/BEGC 104_ British Poetry and Drama_ 14th - 17th Centuries/BLOCK 1/Unit-BEGC_104_5cc92950_UNIT_2",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

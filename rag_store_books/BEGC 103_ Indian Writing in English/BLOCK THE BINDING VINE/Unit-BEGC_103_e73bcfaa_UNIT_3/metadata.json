@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BEGC_103_e73bcfaa_UNIT_3",
+  "unit_title": "UNIT 3 THE BINDING VINE THEMES",
+  "block_label": "BLOCK THE BINDING VINE",
+  "source_pdf": "BEGC 103 BLOCK 2.pdf",
+  "processed_at": "2026-05-01T13:33:54.336240",
+  "total_pages": 44,
+  "total_chunks": 11,
+  "total_words": 3482,
+  "graph_nodes": 12,
+  "graph_edges": 12,
+  "store_path": "C:\\Users\\alemr\\OneDrive\\Dokumenty\\Python Scripts\\edu_rag\\rag_store_books\\BEGC 103_ Indian Writing in English\\BLOCK THE BINDING VINE\\Unit-BEGC_103_e73bcfaa_UNIT_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}
