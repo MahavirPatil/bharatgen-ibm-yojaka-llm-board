@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDLA-137_f00afd29_इकाई_६",
+  "unit_title": "इकाई ६ संवाद कला क विभिन्न पक्ष",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BHDLA-137 Block-1.pdf",
+  "processed_at": "2026-05-10T08:17:54.279911",
+  "total_pages": 109,
+  "total_chunks": 12,
+  "total_words": 4467,
+  "graph_nodes": 13,
+  "graph_edges": 13,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/4.BHDLA-137/BLOCK 1/Unit-BHDLA-137_f00afd29_इकाई_६",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

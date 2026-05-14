@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDLA-137_f00afd29_इकाई_4",
+  "unit_title": "इकाई 4 संप्रषण क विविध रूप",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BHDLA-137 Block-1.pdf",
+  "processed_at": "2026-05-10T08:17:53.400491",
+  "total_pages": 109,
+  "total_chunks": 21,
+  "total_words": 9033,
+  "graph_nodes": 22,
+  "graph_edges": 22,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/4.BHDLA-137/BLOCK 1/Unit-BHDLA-137_f00afd29_इकाई_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

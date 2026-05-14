@@ -9,14 +9,12 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, List, Optional
 import time
-import threading
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from exporter import create_session_xlsx
 
 try:
     from .rag_retriever import MAX_CHUNK_WORDS, MIN_CHUNK_WORDS, MinimalRAGRetriever
@@ -39,6 +37,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_DIR.parent
 RAG_STORE_DIR = Path(os.getenv("RAG_STORE_DIR", str(PROJECT_ROOT / "rag_store_books"))).resolve()
+RAG_STORE_DIR_HINDI = Path(os.getenv("RAG_STORE_DIR_HINDI", str(PROJECT_ROOT / "rag_store_books_hindi"))).resolve()
 DEFAULT_K = 5
 DB_PATH = Path(os.getenv("MINIMAL_DB_PATH", str(BASE_DIR / "minimal_questions.db"))).resolve()
 
@@ -80,7 +79,7 @@ class QueryRequest(BaseModel):
     standard: str
     theme: str = ""
     qType: str
-    num_questions: int = Field(default=1, ge=1)
+    num_questions: int = Field(default=1, ge=1, le=5)
     block: Optional[str] = None
     use_rag: bool = True
     use_citation: bool = False
@@ -90,7 +89,6 @@ class QueryRequest(BaseModel):
     enable_graph_expansion: bool = False
     enable_task_keywords: bool = True
     temperature: float = Field(default=0.7, ge=0.0, le=1.0)
-    rubric_marks:float= Field(default=5.0,ge=0.1,le=20.0)
 
 
 SUPPORTED_QTYPES = {
@@ -282,45 +280,12 @@ class QuestionStore:
         self.lock = Lock()
         self._init_db()
 
-    def _fetch_single(self, query: str, params: tuple = ()) -> Optional[Dict[str, Any]]:
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            row = conn.execute(query, params).fetchone()
-        if not row:
-            return None
-        return dict(row)
-
-    def _rowid_bounds(self) -> Dict[str, Optional[Dict[str, Any]]]:
-        return {
-            "earliest": self._fetch_single(
-                "SELECT rowid AS row_index, id FROM generated_questions ORDER BY rowid ASC LIMIT 1"
-            ),
-            "latest": self._fetch_single(
-                "SELECT rowid AS row_index, id FROM generated_questions ORDER BY rowid DESC LIMIT 1"
-            ),
-        }
-
     def _init_db(self) -> None:
         with sqlite3.connect(self.db_path) as conn:
-            # Table to track bulk generation progress
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS generation_sessions (
-                    id TEXT PRIMARY KEY,
-                    created_at TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    total_requested INTEGER NOT NULL,
-                    total_generated INTEGER DEFAULT 0,
-                    parameters_json TEXT NOT NULL
-                )
-                """
-            )
-            
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS generated_questions (
                     id TEXT PRIMARY KEY,
-                    session_id TEXT,
                     created_at TEXT NOT NULL,
                     model_id TEXT NOT NULL,
                     subject TEXT,
@@ -344,9 +309,8 @@ class QuestionStore:
                     rubric_json TEXT,
                     type_match INTEGER,
                     type_match_reason TEXT,
-                    is_rag INTEGER DEFAULT 0,
-                    use_citation INTEGER DEFAULT 0,
-                    FOREIGN KEY(session_id) REFERENCES generation_sessions(id)
+                    is_rag INTEGER DEFAULT 0
+                        , use_citation INTEGER DEFAULT 0
                 )
                 """
             )
@@ -356,7 +320,6 @@ class QuestionStore:
     def _ensure_columns(self, conn: sqlite3.Connection) -> None:
         existing = {row[1] for row in conn.execute("PRAGMA table_info(generated_questions)")}
         required = {
-            "session_id": "TEXT",
             "alignment_score": "REAL",
             "scores_json": "TEXT",
             "source_text_json": "TEXT",
@@ -373,76 +336,12 @@ class QuestionStore:
             if column_name not in existing:
                 conn.execute(f"ALTER TABLE generated_questions ADD COLUMN {column_name} {column_type}")
 
-    def create_session(self, total_requested: int, parameters: Dict[str, Any]) -> str:
-        session_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
-        with self.lock:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.execute(
-                    """
-                    INSERT INTO generation_sessions (
-                        id, created_at, status, total_requested, total_generated, parameters_json
-                    ) VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (session_id, now, "pending", total_requested, 0, json.dumps(parameters))
-                )
-                conn.commit()
-        return session_id
-
-    def update_session_progress(self, session_id: str, generated_count: int) -> None:
-        with self.lock:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.execute(
-                    """
-                    UPDATE generation_sessions 
-                    SET total_generated = total_generated + ? 
-                    WHERE id = ?
-                    """,
-                    (generated_count, session_id)
-                )
-                conn.commit()
-
-    def update_session_status(self, session_id: str, status: str) -> None:
-        with self.lock:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.execute(
-                    "UPDATE generation_sessions SET status = ? WHERE id = ?",
-                    (status, session_id)
-                )
-                conn.commit()
-
-    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            row = conn.execute("SELECT * FROM generation_sessions WHERE id = ?", (session_id,)).fetchone()
-        if not row:
-            return None
-        data = dict(row)
-        data["parameters"] = json.loads(data.pop("parameters_json"))
-        return data
-
-    def get_sessions(self, limit: int = 50) -> List[Dict[str, Any]]:
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute(
-                "SELECT * FROM generation_sessions ORDER BY created_at DESC LIMIT ?", 
-                (limit,)
-            ).fetchall()
-        
-        sessions = []
-        for row in rows:
-            data = dict(row)
-            data["parameters"] = json.loads(data.pop("parameters_json"))
-            sessions.append(data)
-        return sessions
-
     def save_batch(
         self,
         req: QueryRequest,
         questions: List[Dict[str, Any]],
         chunk_text: str,
         chunk_meta: Optional[Dict[str, Any]],
-        session_id: Optional[str] = None,
     ) -> List[str]:
         ids: List[str] = []
         now = datetime.now(timezone.utc).isoformat()
@@ -464,15 +363,14 @@ class QuestionStore:
                     conn.execute(
                         """
                         INSERT INTO generated_questions (
-                            id, session_id, created_at, model_id, subject, chapter, standard, theme, qtype, depth, language,
+                            id, created_at, model_id, subject, chapter, standard, theme, qtype, depth, language,
                             request_json, question, answer, chunk_text, chunk_source, similarity,
                             alignment_score, scores_json, source_text_json, source_meta_json, board_metadata_json, rubric_json,
                             type_match, type_match_reason, is_rag, use_citation, citation
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             row_id,
-                            session_id,
                             now,
                             req.model_id or "groq-llama-70b",
                             req.subject,
@@ -510,58 +408,27 @@ class QuestionStore:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 """
-                  SELECT rowid AS row_index, id, created_at, model_id, subject, chapter, qtype, question, similarity, alignment_score,
+                  SELECT id, created_at, model_id, subject, chapter, qtype, question, similarity, alignment_score,
                       type_match, type_match_reason, is_rag, use_citation, citation
                 FROM generated_questions
-                ORDER BY rowid DESC
+                ORDER BY created_at DESC
                 LIMIT ? OFFSET ?
                 """,
                 (limit, offset),
             ).fetchall()
         return [dict(r) for r in rows]
 
-    def get_session_questions(self, session_id: str) -> List[Dict[str, Any]]:
+    def get_question(self, row_id: str) -> Optional[Dict[str, Any]]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            rows = conn.execute(
-                """
-                  SELECT rowid AS row_index, id, created_at, model_id, subject, chapter, qtype, depth, language, question, similarity, alignment_score,
-                      type_match, type_match_reason, is_rag, use_citation, citation, scores_json, source_text_json, source_meta_json, board_metadata_json, rubric_json, answer
-                FROM generated_questions
-                WHERE session_id = ?
-                ORDER BY rowid ASC
-                """,
-                (session_id,),
-            ).fetchall()
-        
-        # We need to normalize these the same way we do for get_question
-        normalized_questions = []
-        for r in rows:
-            q = dict(r)
-            for key in ("scores_json", "source_text_json", "source_meta_json", "board_metadata_json", "rubric_json"):
-                if q.get(key):
-                    try:
-                        q[key.replace("_json", "")] = json.loads(q[key])
-                    except Exception:
-                        q[key.replace("_json", "")] = q[key]
-            
-            # Additional UI fields
-            q["category"] = q.get("qtype")
-            q["question_text"] = q.get("question")
-            q["answer_text"] = q.get("answer")
-            q["scores"] = q.get("scores") or {"similarity": q.get("similarity"), "alignment_score": q.get("alignment_score")}
-            normalized_questions.append(q)
-            
-        return normalized_questions
-
-    def get_question(self, row_id: str) -> Optional[Dict[str, Any]]:
-        data = self._fetch_single(
-            "SELECT rowid AS row_index, * FROM generated_questions WHERE id = ?",
-            (row_id,),
-        )
-        if not data:
+            row = conn.execute(
+                "SELECT * FROM generated_questions WHERE id = ?",
+                (row_id,),
+            ).fetchone()
+        if not row:
             return None
 
+        data = dict(row)
         for key in ("scores_json", "source_text_json", "source_meta_json", "board_metadata_json", "rubric_json"):
             if data.get(key):
                 try:
@@ -569,94 +436,6 @@ class QuestionStore:
                 except Exception:
                     data[key.replace("_json", "")] = data[key]
         return data
-
-    def _normalize_question_row(self, row: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-        if not row:
-            return None
-
-        normalized = dict(row)
-        for key in ("scores_json", "source_text_json", "source_meta_json", "board_metadata_json", "rubric_json"):
-            value = normalized.get(key)
-            if value:
-                try:
-                    normalized[key.replace("_json", "")] = json.loads(value)
-                except Exception:
-                    normalized[key.replace("_json", "")] = value
-
-        normalized["category"] = normalized.get("qtype") or normalized.get("category")
-        normalized["generation_settings"] = {
-            "use_citation": bool(normalized.get("use_citation")),
-            "use_rag": bool(normalized.get("is_rag")),
-        }
-        normalized["citation_mode"] = bool(normalized.get("use_citation"))
-        normalized["question_text"] = normalized.get("question")
-        normalized["answer_text"] = normalized.get("answer")
-        normalized["rubric"] = normalized.get("rubric") if isinstance(normalized.get("rubric"), dict) else normalized.get("rubric")
-        normalized["source_text"] = normalized.get("source_text") if isinstance(normalized.get("source_text"), dict) else normalized.get("source_text")
-        normalized["source_meta"] = normalized.get("source_meta") if isinstance(normalized.get("source_meta"), dict) else normalized.get("source_meta")
-        normalized["board_metadata"] = normalized.get("board_metadata") if isinstance(normalized.get("board_metadata"), dict) else normalized.get("board_metadata")
-        normalized["scores"] = normalized.get("scores") or {"similarity": normalized.get("similarity"), "alignment_score": normalized.get("alignment_score")}
-        return normalized
-
-    def get_question_view(self, action: str = "latest", question_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        action = (action or "latest").strip().lower()
-
-        if action == "current":
-            if not question_id:
-                return None
-            row = self.get_question(question_id)
-        elif action == "earliest":
-            row = self._fetch_single(
-                "SELECT rowid AS row_index, * FROM generated_questions ORDER BY rowid ASC LIMIT 1"
-            )
-        elif action == "latest":
-            row = self._fetch_single(
-                "SELECT rowid AS row_index, * FROM generated_questions ORDER BY rowid DESC LIMIT 1"
-            )
-        elif action in {"prev", "next"}:
-            if not question_id:
-                return None
-            current = self.get_question(question_id)
-            if not current or current.get("row_index") is None:
-                return None
-            comparator = "<" if action == "prev" else ">"
-            sort_order = "DESC" if action == "prev" else "ASC"
-            row = self._fetch_single(
-                f"SELECT rowid AS row_index, * FROM generated_questions WHERE rowid {comparator} ? ORDER BY rowid {sort_order} LIMIT 1",
-                (current["row_index"],),
-            )
-        else:
-            return None
-
-        if not row:
-            return None
-
-        normalized = self._normalize_question_row(row)
-        if not normalized:
-            return None
-
-        bounds = self._rowid_bounds()
-        earliest = bounds.get("earliest") or {}
-        latest = bounds.get("latest") or {}
-        current_index = normalized.get("row_index")
-
-        normalized["navigation"] = {
-            "current_id": normalized.get("id"),
-            "row_index": current_index,
-            "earliest_id": earliest.get("id"),
-            "latest_id": latest.get("id"),
-            "has_prev": bool(
-                earliest.get("row_index") is not None
-                and current_index is not None
-                and current_index > earliest.get("row_index")
-            ),
-            "has_next": bool(
-                latest.get("row_index") is not None
-                and current_index is not None
-                and current_index < latest.get("row_index")
-            ),
-        }
-        return normalized
 
 
 def resolve_groq_model(model_id: Optional[str]) -> str:
@@ -698,11 +477,6 @@ async def serve_index():
 @app.get("/viewq")
 async def serve_viewer():
     return FileResponse(frontend_dir / "viewq.html")
-
-@app.get("/generations.html")
-@app.get("/generations")
-async def serve_generations():
-    return FileResponse(frontend_dir / "generations.html")
 # ----------------------------------------------------------
 
 try:
@@ -722,8 +496,40 @@ else:
     groq_client = None
 
 
-retriever = MinimalRAGRetriever(RAG_STORE_DIR)
+def _get_rag_store_dir(language: str = "en") -> Path:
+    """Get RAG store directory based on language."""
+    if language.lower() in {"hi", "hindi"}:
+        return RAG_STORE_DIR_HINDI
+    return RAG_STORE_DIR
+
+
+# Initialize retrievers for each language
+_retrievers: Dict[str, Optional[MinimalRAGRetriever]] = {}
+
+def _init_retrievers():
+    """Initialize retrievers for both languages."""
+    global _retrievers
+    for lang, store_path in [("en", RAG_STORE_DIR), ("hi", RAG_STORE_DIR_HINDI)]:
+        try:
+            if store_path.exists() and (store_path / "master_index.json").exists():
+                _retrievers[lang] = MinimalRAGRetriever(store_path)
+            else:
+                _retrievers[lang] = None
+        except Exception as e:
+            print(f"Failed to initialize {lang} retriever: {e}")
+            _retrievers[lang] = None
+
+_init_retrievers()
+
+# Backward compatibility: default retriever for English
+retriever = _retrievers.get("en")
 store = QuestionStore(DB_PATH)
+
+
+def _get_retriever(language: str = "en") -> Optional[MinimalRAGRetriever]:
+    """Get retriever for specified language."""
+    normalized_lang = "hi" if language.lower() in {"hi", "hindi"} else "en"
+    return _retrievers.get(normalized_lang)
 
 
 def _build_source_meta(first_meta: Optional[Dict[str, Any]], retrieval_query: str) -> Dict[str, Any]:
@@ -817,12 +623,19 @@ def health() -> Dict[str, Any]:
     llm_provider = os.getenv("LLM_PROVIDER", "groq").lower()
     is_ok = groq_client is not None if llm_provider == "groq" else True 
 
+    en_retriever = _get_retriever("en")
+    hi_retriever = _get_retriever("hi")
+    
     return {
         "ok": is_ok,
         "provider": llm_provider,
         "groq_ready": groq_client is not None,
         "rag_store": str(RAG_STORE_DIR),
-        "documents_loaded": len(retriever.records),
+        "rag_store_hindi": str(RAG_STORE_DIR_HINDI),
+        "documents_loaded": len(en_retriever.records) if en_retriever else 0,
+        "documents_loaded_hindi": len(hi_retriever.records) if hi_retriever else 0,
+        "retriever_available": en_retriever is not None,
+        "retriever_available_hindi": hi_retriever is not None,
         "default_k": DEFAULT_K,
         "chunk_word_limits": [MIN_CHUNK_WORDS + 1, MAX_CHUNK_WORDS - 1],
         "import_error": str(_import_error) if _import_error else None,
@@ -830,35 +643,7 @@ def health() -> Dict[str, Any]:
 
 
 @app.post("/ask")
-async def ask(req: QueryRequest):
-    from tasks import generated_questions_task
-    total_req = get_generation_question_count(req.depth, req.num_questions)
-    
-    # 1. Create a session in the database
-    session_id = store.create_session(total_req, req.model_dump())
-    
-    # 2. Split the request into chunks of max 2 questions (hyperparameter)
-    chunk_size = 2
-    tasks_needed = (total_req + chunk_size - 1) // chunk_size
-    
-    for i in range(tasks_needed):
-        chunk_req = req.model_copy()
-        # Adjust the number of questions for this specific chunk
-        chunk_req.num_questions = min(chunk_size, total_req - i * chunk_size)
-        
-        # 3. Queue the background task
-        generated_questions_task.delay(session_id, chunk_req.model_dump(), chunk_req.num_questions)
-        
-    # 4. Immediately return the session ID
-    return {
-        "session_id": session_id,
-        "status": "pending",
-        "total_requested": total_req,
-        "message": "Questions are being generated in the background."
-    }
-
-
-async def _async_generate_chunk(req: QueryRequest, session_id: str) -> List[Dict[str, Any]]:
+async def ask(req: QueryRequest) -> List[Dict[str, Any]]:
     start_time = time.time()  # Start timer
     
     if os.getenv("LLM_PROVIDER", "groq").lower() == "groq" and groq_client is None:
@@ -936,23 +721,28 @@ async def _async_generate_chunk(req: QueryRequest, session_id: str) -> List[Dict
             generation_time_ms=round((time.time() - start_time) * 1000, 2),
         )
 
-        saved_ids = store.save_batch(req, enriched, chunk_text=(source_chunks.get("topic_chunk") or "") + ("\n\n" + source_chunks.get("theme_chunk") if source_chunks.get("theme_chunk") else ""), chunk_meta=source_meta, session_id=session_id)
+        saved_ids = store.save_batch(req, enriched, chunk_text=(source_chunks.get("topic_chunk") or "") + ("\n\n" + source_chunks.get("theme_chunk") if source_chunks.get("theme_chunk") else ""), chunk_meta=source_meta)
         for i, row_id in enumerate(saved_ids):
             if i < len(enriched):
                 enriched[i]["id"] = row_id
-                
-        # Update progress
-        store.update_session_progress(session_id, len(saved_ids))
         return enriched
 
     retrieval_query = " ".join([req.chapter or "", req.theme or ""]).strip() or req.subject
     chunk_text = ""
     metas: List[Dict[str, Any]] = []
 
+    # Get the appropriate retriever based on language
+    lang_retriever = _get_retriever(req.language)
+    if lang_retriever is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"RAG store not available for language '{req.language}'. Please check configuration."
+        )
+
     # Citation mode takes precedence over generic RAG retrieval when enabled
     if req.use_citation:
         # Citation-based retrieval: pick a random citation verbatim from the selected block
-        chunk_text, metas = retriever.retrieve_citation(
+        chunk_text, metas = lang_retriever.retrieve_citation(
             query=retrieval_query,
             subject=req.subject,
             chapter=req.chapter,
@@ -969,7 +759,7 @@ async def _async_generate_chunk(req: QueryRequest, session_id: str) -> List[Dict
             )
     elif req.use_rag:
         # Standard semantic RAG retrieval
-        chunk_text, metas = retriever.retrieve(
+        chunk_text, metas = lang_retriever.retrieve(
             query=retrieval_query,
             subject=req.subject,
             chapter=req.chapter,
@@ -1013,48 +803,12 @@ async def _async_generate_chunk(req: QueryRequest, session_id: str) -> List[Dict
         generation_time_ms=round((time.time() - start_time) * 1000, 2),
     )
 
-    saved_ids = store.save_batch(req, enriched, chunk_text=chunk_text if (req.use_rag or req.use_citation) else "", chunk_meta=first_meta, session_id=session_id)
+    saved_ids = store.save_batch(req, enriched, chunk_text=chunk_text if (req.use_rag or req.use_citation) else "", chunk_meta=first_meta)
     for i, row_id in enumerate(saved_ids):
         if i < len(enriched):
             enriched[i]["id"] = row_id
 
-    # Update progress
-    store.update_session_progress(session_id, len(saved_ids))
     return enriched
-
-
-@app.get("/api/session/{session_id}")
-def get_session_status(session_id: str) -> Dict[str, Any]:
-    session = store.get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return session
-
-
-@app.get("/api/sessions")
-def list_sessions(limit: int = 50) -> List[Dict[str, Any]]:
-    return store.get_sessions(limit=limit)
-
-
-@app.get("/api/session/{session_id}/questions")
-def get_session_questions(session_id: str) -> List[Dict[str, Any]]:
-    return store.get_session_questions(session_id)
-
-
-@app.get("/api/session/{session_id}/export")
-def export_session_xlsx(session_id: str):
-    questions = store.get_session_questions(session_id)
-    if not questions:
-        raise HTTPException(status_code=404, detail="No questions found for this session")
-    
-    output = create_session_xlsx(questions)
-    
-    filename = f"BharatGen_Session_{session_id[:8]}.xlsx"
-    return StreamingResponse(
-        output,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
 
 
 @app.get("/api/questions")
@@ -1092,36 +846,6 @@ def get_saved_question(qid: str) -> Dict[str, Any]:
     row["scores"] = row.get("scores") or {"similarity": row.get("similarity"), "alignment_score": row.get("alignment_score")}
     return row
 
-
-@app.get("/api/question-stack")
-def get_question_stack(action: str = "latest", question_id: Optional[str] = None) -> Dict[str, Any]:
-    row = store.get_question_view(action=action, question_id=question_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="Question not found")
-
-    if row.get("type_match") is not None:
-        row["type_match"] = bool(row["type_match"])
-
-    try:
-        req_json = json.loads(row.get("request_json") or "{}") if row.get("request_json") else {}
-    except Exception:
-        req_json = {}
-
-    row["req"] = {
-        "model": row.get("model_id"),
-        "subject": row.get("subject"),
-        "chapter": row.get("chapter"),
-        "qType": row.get("qtype"),
-        "num_questions": req_json.get("num_questions"),
-        "enable_task_keywords": req_json.get("enable_task_keywords", True),
-    }
-    row["scores"] = row.get("scores") or {"similarity": row.get("similarity"), "alignment_score": row.get("alignment_score")}
-
-    return {
-        "question": row,
-        "navigation": row.get("navigation", {}),
-    }
-
 def _get_books_root():
     """Books root for PDF serving; must match ingest BOOKS_ROOT."""
     env_path = os.getenv("BHARATGEN_BOOKS_PATH")
@@ -1142,14 +866,20 @@ def _extract_block_label(file_name: str) -> str:
     return stem
 
 @app.get("/course-blocks")
-async def list_course_blocks():
-    """Dynamically build the UI dropdowns directly from the indexed RAG folders."""
-    if not RAG_STORE_DIR.exists() or not RAG_STORE_DIR.is_dir():
+async def list_course_blocks(language: str = "en"):
+    """Dynamically build the UI dropdowns directly from the indexed RAG folders for the specified language."""
+    # Get the correct store directory based on language
+    if language.lower() in {"hi", "hindi"}:
+        store_dir = RAG_STORE_DIR_HINDI
+    else:
+        store_dir = RAG_STORE_DIR
+    
+    if not store_dir.exists() or not store_dir.is_dir():
         return {"courses": []}
 
     course_rows = []
     
-    for course_dir in sorted([p for p in RAG_STORE_DIR.iterdir() if p.is_dir()], key=lambda p: p.name.lower()):
+    for course_dir in sorted([p for p in store_dir.iterdir() if p.is_dir()], key=lambda p: p.name.lower()):
         blocks = []
         
         search_dirs = [course_dir]

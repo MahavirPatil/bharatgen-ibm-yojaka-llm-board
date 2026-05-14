@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDC_110_18312dbc_इकाई_8",
+  "unit_title": "इकाई 8 पाजेब जैनेन्द्र कुमार)ः वाचन और विश्लेषण",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDC 110 Block-2.pdf",
+  "processed_at": "2026-05-09T06:15:14.223508",
+  "total_pages": 259,
+  "total_chunks": 88,
+  "total_words": 34338,
+  "graph_nodes": 89,
+  "graph_edges": 89,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/1.BHDC-110/BLOCK 2/Unit-BHDC_110_18312dbc_इकाई_8",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": true
+}

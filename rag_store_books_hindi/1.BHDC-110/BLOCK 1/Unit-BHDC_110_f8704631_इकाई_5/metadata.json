@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDC_110_f8704631_इकाई_5",
+  "unit_title": "इकाई 5 पूस की रात | प्रेमचंद) वाचन और विश्लेषण",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BHDC 110 Block-1.pdf",
+  "processed_at": "2026-05-10T11:47:00.979740",
+  "total_pages": 148,
+  "total_chunks": 45,
+  "total_words": 22961,
+  "graph_nodes": 46,
+  "graph_edges": 46,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/1.BHDC-110/BLOCK 1/Unit-BHDC_110_f8704631_इकाई_5",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

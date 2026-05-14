@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDLA-137_1bae0d0a_इकाई_9",
+  "unit_title": "इकाई 9 कार्यालयी लेखन रिपोर्ट और कार्यवृत्त",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDLA-137 Block-2.pdf",
+  "processed_at": "2026-05-10T08:20:33.486733",
+  "total_pages": 96,
+  "total_chunks": 33,
+  "total_words": 16723,
+  "graph_nodes": 34,
+  "graph_edges": 34,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/4.BHDLA-137/BLOCK 2/Unit-BHDLA-137_1bae0d0a_इकाई_9",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

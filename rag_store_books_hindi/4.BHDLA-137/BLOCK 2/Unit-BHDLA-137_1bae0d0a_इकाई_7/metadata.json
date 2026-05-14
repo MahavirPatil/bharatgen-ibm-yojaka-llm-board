@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDLA-137_1bae0d0a_इकाई_7",
+  "unit_title": "इकाई 7 पत्रलेखन औपचारिक",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDLA-137 Block-2.pdf",
+  "processed_at": "2026-05-10T08:20:31.350918",
+  "total_pages": 96,
+  "total_chunks": 18,
+  "total_words": 4443,
+  "graph_nodes": 19,
+  "graph_edges": 19,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/4.BHDLA-137/BLOCK 2/Unit-BHDLA-137_1bae0d0a_इकाई_7",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

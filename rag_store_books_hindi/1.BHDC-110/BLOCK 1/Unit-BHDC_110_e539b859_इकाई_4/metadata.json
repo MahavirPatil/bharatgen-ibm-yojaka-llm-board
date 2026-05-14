@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDC_110_e539b859_इकाई_4",
+  "unit_title": "इकाई 4 उसने कहा था चंद्रधर शर्मा गुलेरी) वाचन और विश्लेषण",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BHDC 110 Block-1.pdf",
+  "processed_at": "2026-05-09T06:04:27.856036",
+  "total_pages": 148,
+  "total_chunks": 22,
+  "total_words": 5271,
+  "graph_nodes": 23,
+  "graph_edges": 23,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/1.BHDC-110/BLOCK 1/Unit-BHDC_110_e539b859_इकाई_4",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": true
+}

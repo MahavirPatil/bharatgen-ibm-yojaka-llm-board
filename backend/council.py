@@ -19,6 +19,19 @@ except ImportError:
     from prompt_builder import get_generation_question_count, is_bloom_level_2
 
 
+def _get_rag_store_dir(language: str = "en") -> Path:
+    """Get RAG store directory based on language."""
+    if language.lower() in {"hi", "hindi"}:
+        rag_store_path = os.getenv("RAG_STORE_DIR_HINDI", "rag_store_books_hindi")
+    else:
+        rag_store_path = os.getenv("RAG_STORE_DIR", "rag_store_books")
+    
+    resolved = Path(rag_store_path)
+    if not resolved.is_absolute():
+        resolved = (Path(__file__).parent.parent / rag_store_path).resolve()
+    return resolved
+
+
 def build_member_generate_one_prompt(subject: str, chapter: str, theme: str, qType: str,
                                       depth: str, language: str,
                                       topic_chunk: str = None,
@@ -457,7 +470,7 @@ async def run_council_flow(chairman_model_id: str, member_model_ids: List[str],
     
     if use_citation:
         # Citation-based retrieval path: pick one verbatim citation per topic/theme
-        rag_store_dir = Path(os.getenv("RAG_STORE_DIR", str(Path(__file__).parent.parent / "rag_store_books"))).resolve()
+        rag_store_dir = _get_rag_store_dir(language)
         try:
             retriever = MinimalRAGRetriever(rag_store_dir)
             topic_chunk, theme_chunk, topic_meta, theme_meta = retriever.retrieve_dual_citation(
@@ -476,7 +489,7 @@ async def run_council_flow(chairman_model_id: str, member_model_ids: List[str],
             print(f"[Council] Citation retrieval failed: {e}. Proceeding without RAG context.")
     elif use_rag:
         # Fetch RAG context using unified retriever
-        rag_store_dir = Path(os.getenv("RAG_STORE_DIR", str(Path(__file__).parent.parent / "rag_store_books"))).resolve()
+        rag_store_dir = _get_rag_store_dir(language)
         try:
             retriever = MinimalRAGRetriever(rag_store_dir)
             loop = asyncio.get_event_loop()

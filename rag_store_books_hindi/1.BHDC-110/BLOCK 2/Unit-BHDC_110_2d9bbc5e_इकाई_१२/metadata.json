@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDC_110_2d9bbc5e_इकाई_१२",
+  "unit_title": "इकाई १२ दापहर का भाजन अमरकांत) - वाचन और विश्लेषण",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDC 110 Block-2.pdf",
+  "processed_at": "2026-05-10T11:51:59.887056",
+  "total_pages": 259,
+  "total_chunks": 27,
+  "total_words": 8715,
+  "graph_nodes": 28,
+  "graph_edges": 28,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/1.BHDC-110/BLOCK 2/Unit-BHDC_110_2d9bbc5e_इकाई_१२",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

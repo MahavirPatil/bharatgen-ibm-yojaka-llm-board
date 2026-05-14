@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDS-183_491ad903_इकाई_3",
+  "unit_title": "इकाई 3 - अनुवाद प्रक्रिया, साधन एवं पुनरीक्षण",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BHDS-183 Block-1.pdf",
+  "processed_at": "2026-05-10T07:52:42.334577",
+  "total_pages": 116,
+  "total_chunks": 34,
+  "total_words": 15181,
+  "graph_nodes": 35,
+  "graph_edges": 35,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/3.BHDS-183/BLOCK 1/Unit-BHDS-183_491ad903_इकाई_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

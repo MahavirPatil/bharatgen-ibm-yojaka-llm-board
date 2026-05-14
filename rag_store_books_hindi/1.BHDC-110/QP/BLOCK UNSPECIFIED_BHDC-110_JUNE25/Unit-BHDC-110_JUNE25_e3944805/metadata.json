@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDC-110_JUNE25_e3944805",
+  "unit_title": "Full Document",
+  "block_label": "QP",
+  "source_pdf": "BHDC-110_JUNE25.pdf",
+  "processed_at": "2026-05-10T11:43:14.452347",
+  "total_pages": 4,
+  "total_chunks": 6,
+  "total_words": 679,
+  "graph_nodes": 7,
+  "graph_edges": 7,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/1.BHDC-110/QP/BLOCK UNSPECIFIED_BHDC-110_JUNE25/Unit-BHDC-110_JUNE25_e3944805",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

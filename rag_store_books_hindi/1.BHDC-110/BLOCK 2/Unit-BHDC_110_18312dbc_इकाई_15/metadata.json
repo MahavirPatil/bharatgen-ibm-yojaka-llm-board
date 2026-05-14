@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDC_110_18312dbc_इकाई_15",
+  "unit_title": "इकाई 15 षडयंत्र (विपिन बिहारी) : वाचन ओर विश्लेषण",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDC 110 Block-2.pdf",
+  "processed_at": "2026-05-09T06:15:12.573094",
+  "total_pages": 259,
+  "total_chunks": 2,
+  "total_words": 205,
+  "graph_nodes": 3,
+  "graph_edges": 3,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/1.BHDC-110/BLOCK 2/Unit-BHDC_110_18312dbc_इकाई_15",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": true
+}

@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDLA-137_f00afd29_इकाई_3",
+  "unit_title": "इकाई 3 आंगिक भाषा और संप्रषण",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BHDLA-137 Block-1.pdf",
+  "processed_at": "2026-05-10T08:17:52.433772",
+  "total_pages": 109,
+  "total_chunks": 21,
+  "total_words": 5419,
+  "graph_nodes": 22,
+  "graph_edges": 22,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/4.BHDLA-137/BLOCK 1/Unit-BHDLA-137_f00afd29_इकाई_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

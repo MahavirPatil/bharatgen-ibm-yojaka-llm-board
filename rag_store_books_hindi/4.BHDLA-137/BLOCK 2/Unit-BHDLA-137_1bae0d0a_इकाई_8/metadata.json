@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDLA-137_1bae0d0a_इकाई_8",
+  "unit_title": "इकाई 8 संचार क लिए लखन",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDLA-137 Block-2.pdf",
+  "processed_at": "2026-05-10T08:20:32.283990",
+  "total_pages": 96,
+  "total_chunks": 15,
+  "total_words": 5833,
+  "graph_nodes": 16,
+  "graph_edges": 16,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/4.BHDLA-137/BLOCK 2/Unit-BHDLA-137_1bae0d0a_इकाई_8",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

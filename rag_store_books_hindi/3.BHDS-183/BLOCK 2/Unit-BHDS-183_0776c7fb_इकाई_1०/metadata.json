@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDS-183_0776c7fb_इकाई_1०",
+  "unit_title": "इकाई 1०",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDS-183 Block-2.pdf",
+  "processed_at": "2026-05-10T07:59:33.197193",
+  "total_pages": 132,
+  "total_chunks": 33,
+  "total_words": 6031,
+  "graph_nodes": 34,
+  "graph_edges": 34,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/3.BHDS-183/BLOCK 2/Unit-BHDS-183_0776c7fb_इकाई_1०",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

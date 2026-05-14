@@ -50,6 +50,7 @@ def _extract_block_label(pdf_stem: str, full_text: str) -> str:
     """
     Extract block label as `BLOCK <NAME>` from filename or text.
     Evaluates both and picks the most descriptive (longest) title.
+    Updated to support Hindi "ब्लॉक" alongside English "BLOCK".
     """
     # 1. Clean filename (replace underscores and hyphens with spaces)
     stem_norm = re.sub(r"[_\-]+", " ", (pdf_stem or "")).upper()
@@ -58,8 +59,9 @@ def _extract_block_label(pdf_stem: str, full_text: str) -> str:
     # 2. Clean document text (first 6000 chars)
     text_head = re.sub(r"\s+", " ", (full_text or "")[:6000]).upper()
     
-    # 3. Capture everything after "BLOCK" until a structural keyword or end of string
-    regex_pattern = r"\bBLOCK\s*([\w\s:,-]{1,100}?)(?=\b(?:UNIT|CHAPTER|STRUCTURE|OBJECTIVES|INTRODUCTION|P\d)\b|$)"
+    # 3. Capture everything after "BLOCK" or "ब्लॉक" until a structural keyword or end of string
+    # Updated regex to include Hindi markers in lookahead for better boundary detection
+    regex_pattern = r"\b(?:BLOCK|ब्लॉक)\s*([\w\s:,-]{1,100}?)(?=\b(?:UNIT|CHAPTER|STRUCTURE|OBJECTIVES|INTRODUCTION|P\d|अध्याय|इकाई|पाठ)\b|$)"
     
     m_file = re.search(regex_pattern, stem_norm)
     m_text = re.search(regex_pattern, text_head)

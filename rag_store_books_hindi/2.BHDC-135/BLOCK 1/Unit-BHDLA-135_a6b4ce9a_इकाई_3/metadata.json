@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDLA-135_a6b4ce9a_इकाई_3",
+  "unit_title": "इकाई 3 हिंदी का प्रयोजनमूलक स्वरूप",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BHDLA-135 Block-1.pdf",
+  "processed_at": "2026-05-10T07:24:47.012347",
+  "total_pages": 110,
+  "total_chunks": 57,
+  "total_words": 30057,
+  "graph_nodes": 58,
+  "graph_edges": 58,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/2.BHDC-135/BLOCK 1/Unit-BHDLA-135_a6b4ce9a_इकाई_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

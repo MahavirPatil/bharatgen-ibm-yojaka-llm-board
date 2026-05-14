@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDC-133_72d416e8_इकाई_3",
+  "unit_title": "इकाई 3 द्विवेदी युगीन हिंदी काव्यः स्वरूप और विकास इकाई की रूपरेखा 3.0 उद्देश्य",
+  "block_label": "BLOCK 1",
+  "source_pdf": "BHDC-133 Block-1.pdf",
+  "processed_at": "2026-05-10T08:23:30.718731",
+  "total_pages": 164,
+  "total_chunks": 33,
+  "total_words": 27537,
+  "graph_nodes": 34,
+  "graph_edges": 34,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/5.BHDC-133/BLOCK 1/Unit-BHDC-133_72d416e8_इकाई_3",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

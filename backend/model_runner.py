@@ -56,7 +56,7 @@ def initialize_clients():
                 
     # Initialize Ollama if needed
     if _ollama_client is None and OLLAMA_AVAILABLE and LLM_PROVIDER == "ollama":
-        env_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434\v1")
+        env_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         env_base = env_base.strip()
         tried = []
 
@@ -133,7 +133,8 @@ async def run_model(model_id: str, prompt: str, req=None, temperature: Optional[
                     model=target_model,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=temp,
-                    max_tokens=max_tokens
+                    max_tokens=max_tokens,
+                    extra_body={"reasoning_effort": "none"}
                 ),
                 timeout=MODEL_REQUEST_TIMEOUT_S,
             )

@@ -25,13 +25,14 @@ class HierarchicalChunk:
 
 class HierarchicalChunker:
     def __init__(self):
+        # Updated to support Hindi keywords and Devanagari digits alongside English
         self.unit_header_re = re.compile(
-            r"(?im)^[ \t]*(?P<marker>(?:unit|chapter)\s+\d+[a-zA-Z0-9-]*)"
+            r"(?im)^[ \t]*(?P<marker>(?:unit|chapter|अध्याय|इकाई|पाठ)\s+[\d\u0966-\u096F]+[a-zA-Z0-9\u0900-\u097F-]*)"  # Added Hindi markers and Devanagari digits
             r"(?:[ \t]+(?P<title_inline>[^\n]{1,180})|[ \t]*\n[ \t]*(?P<title_next>[^\n]{1,180}))?"
         )
         self.section_header_re = re.compile(
-            r"(?im)^[ \t]*(?P<marker>(?:\d+\.\d+(?:\.\d+)*|(?:section|subsection|sub-section)\s+\d+(?:\.\d+)*|(?:example|figure|table)\s+\d+(?:\.\d+)?))"
-            r"(?:[ \t]+(?P<title_inline>[^\n]{1,180})|[ \t]*(?:\n[ \t]*)+(?P<title_next>(?!\d+(?:\.\d+)+\s*$)[^\n]{1,180}))?"
+            r"(?im)^[ \t]*(?P<marker>(?:[\d\u0966-\u096F]+(?:\.[\d\u0966-\u096F]+)*|(?:section|subsection|sub-section|अनुभाग|उप-अनुभाग)\s+[\d\u0966-\u096F]+(?:\.[\d\u0966-\u096F]+)*|(?:example|figure|table)\s+[\d\u0966-\u096F]+(?:\.[\d\u0966-\u096F]+)?))"  # Added Hindi markers and Devanagari digits
+            r"(?:[ \t]+(?P<title_inline>[^\n]{1,180})|[ \t]*(?:\n[ \t]*)+(?P<title_next>(?![\d\u0966-\u096F]+(?:\.[\d\u0966-\u096F]+)+\s*$)[^\n]{1,180}))?"
         )
         self.front_matter_re = re.compile(
             r"(?i)(all rights reserved|isbn|printed and published|section officer|school of humanities|laser typeset|copyright|block introduction)"

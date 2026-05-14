@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDS-183_0776c7fb_इकाई_8",
+  "unit_title": "इकाई 8 - पारिभाषिक शब्दावली - अवधारणा ओर अनुवाद",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDS-183 Block-2.pdf",
+  "processed_at": "2026-05-10T07:59:32.117958",
+  "total_pages": 132,
+  "total_chunks": 26,
+  "total_words": 13604,
+  "graph_nodes": 27,
+  "graph_edges": 27,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/3.BHDS-183/BLOCK 2/Unit-BHDS-183_0776c7fb_इकाई_8",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

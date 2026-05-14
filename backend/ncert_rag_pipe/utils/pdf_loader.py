@@ -30,10 +30,11 @@ if easyocr is not None:
 else:
     logger.warning("easyocr not installed. OCR fallback is disabled.")
 
-def is_garbage_text(text: str, threshold: float = 0.10) -> bool:
+def is_garbage_text(text: str, threshold: float = 0.02) -> bool:
     """
     Detects if the extracted text is gibberish/legacy font mapping.
     Legacy Hindi fonts map Devanagari to weird extended ASCII characters.
+    Lowered threshold from 10% to 2% to catch Hindi legacy fonts (Kruti Dev, etc.).
     """
     if len(text) < 50:
         return True # Too short, likely an image-based page
@@ -46,6 +47,7 @@ def is_garbage_text(text: str, threshold: float = 0.10) -> bool:
     
     # If the percentage of "weird" characters is higher than the threshold,
     # it means the PDF is using a broken legacy font encoding.
+    # Threshold lowered to 2% to detect Hindi legacy fonts with ~1-5% weird chars.
     weird_ratio = len(weird_chars) / len(text)
     
     if weird_ratio > threshold:

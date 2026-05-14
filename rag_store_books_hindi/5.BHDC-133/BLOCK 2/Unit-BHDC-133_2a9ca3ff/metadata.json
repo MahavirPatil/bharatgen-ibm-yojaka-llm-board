@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDC-133_2a9ca3ff",
+  "unit_title": "Full Document",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDC-133 Block-2.pdf",
+  "processed_at": "2026-05-10T08:23:46.182028",
+  "total_pages": 136,
+  "total_chunks": 26,
+  "total_words": 40068,
+  "graph_nodes": 27,
+  "graph_edges": 27,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/5.BHDC-133/BLOCK 2/Unit-BHDC-133_2a9ca3ff",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

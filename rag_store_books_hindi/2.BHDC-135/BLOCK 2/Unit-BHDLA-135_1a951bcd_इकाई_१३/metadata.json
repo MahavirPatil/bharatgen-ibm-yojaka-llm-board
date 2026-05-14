@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDLA-135_1a951bcd_इकाई_१३",
+  "unit_title": "इकाई १३ वाणिज्य की भाषा तथा पारिभाषिक शब्द",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDLA-135 Block-2.pdf",
+  "processed_at": "2026-05-10T07:25:43.279621",
+  "total_pages": 106,
+  "total_chunks": 19,
+  "total_words": 4991,
+  "graph_nodes": 20,
+  "graph_edges": 20,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/2.BHDC-135/BLOCK 2/Unit-BHDLA-135_1a951bcd_इकाई_१३",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

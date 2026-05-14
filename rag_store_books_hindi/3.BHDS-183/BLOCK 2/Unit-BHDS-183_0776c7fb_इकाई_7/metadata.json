@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDS-183_0776c7fb_इकाई_7",
+  "unit_title": "इकाई 7 - प्रशासन को भाषा और अनुवाद",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDS-183 Block-2.pdf",
+  "processed_at": "2026-05-10T07:59:31.033876",
+  "total_pages": 132,
+  "total_chunks": 7,
+  "total_words": 3886,
+  "graph_nodes": 8,
+  "graph_edges": 8,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/3.BHDS-183/BLOCK 2/Unit-BHDS-183_0776c7fb_इकाई_7",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

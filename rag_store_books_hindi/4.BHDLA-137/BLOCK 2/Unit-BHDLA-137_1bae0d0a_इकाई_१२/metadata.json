@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDLA-137_1bae0d0a_इकाई_१२",
+  "unit_title": "इकाई १२ भाषण क लिए लेखन",
+  "block_label": "BLOCK 2",
+  "source_pdf": "BHDLA-137 Block-2.pdf",
+  "processed_at": "2026-05-10T08:20:34.413025",
+  "total_pages": 96,
+  "total_chunks": 17,
+  "total_words": 6299,
+  "graph_nodes": 18,
+  "graph_edges": 18,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/4.BHDLA-137/BLOCK 2/Unit-BHDLA-137_1bae0d0a_इकाई_१२",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

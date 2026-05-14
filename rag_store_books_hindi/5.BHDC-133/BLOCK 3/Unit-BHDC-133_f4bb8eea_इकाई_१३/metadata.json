@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDC-133_f4bb8eea_इकाई_१३",
+  "unit_title": "इकाई १३ काव्य वाचन और विश्लेषण - मैथिली शरण गुप्त रामनरेश त्रिपाठी इकाई की रूपरेखा",
+  "block_label": "BLOCK 3",
+  "source_pdf": "BHDC-133 Block-3.pdf",
+  "processed_at": "2026-05-10T08:25:43.708422",
+  "total_pages": 101,
+  "total_chunks": 37,
+  "total_words": 25164,
+  "graph_nodes": 38,
+  "graph_edges": 38,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/5.BHDC-133/BLOCK 3/Unit-BHDC-133_f4bb8eea_इकाई_१३",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

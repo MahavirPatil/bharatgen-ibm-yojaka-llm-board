@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDS-183_JUNE25_9101d3db",
+  "unit_title": "Full Document",
+  "block_label": "QP",
+  "source_pdf": "BHDS-183_JUNE25.pdf",
+  "processed_at": "2026-05-10T07:46:48.785349",
+  "total_pages": 3,
+  "total_chunks": 10,
+  "total_words": 344,
+  "graph_nodes": 11,
+  "graph_edges": 11,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/3.BHDS-183/QP/BLOCK UNSPECIFIED_BHDS-183_JUNE25/Unit-BHDS-183_JUNE25_9101d3db",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}

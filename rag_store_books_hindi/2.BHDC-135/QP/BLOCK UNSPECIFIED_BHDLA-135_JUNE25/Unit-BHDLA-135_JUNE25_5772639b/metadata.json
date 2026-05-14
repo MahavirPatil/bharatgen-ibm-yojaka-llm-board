@@ -1,0 +1,16 @@
+{
+  "document_id": "Unit-BHDLA-135_JUNE25_5772639b",
+  "unit_title": "Full Document",
+  "block_label": "QP",
+  "source_pdf": "BHDLA-135_JUNE25.pdf",
+  "processed_at": "2026-05-10T07:22:50.459364",
+  "total_pages": 4,
+  "total_chunks": 7,
+  "total_words": 405,
+  "graph_nodes": 8,
+  "graph_edges": 8,
+  "store_path": "/data1/mahavir/edu_rag/rag_store_books_hindi/2.BHDC-135/QP/BLOCK UNSPECIFIED_BHDLA-135_JUNE25/Unit-BHDLA-135_JUNE25_5772639b",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dim": 384,
+  "force_ocr": false
+}
